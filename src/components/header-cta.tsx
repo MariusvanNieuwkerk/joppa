@@ -67,7 +67,7 @@ export function HeaderCta() {
 
   return (
     <Link
-      href="/login/bedrijf"
+      href="/login"
       className="inline-flex h-9 items-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
     >
       Log in

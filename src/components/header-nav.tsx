@@ -1,47 +1,132 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/cn";
+import { getSupabaseClient } from "@/lib/supabase";
 
-type NavItem = { href: string; label: string };
+type NavItem =
+  | { kind: "link"; href: string; label: string }
+  | { kind: "action"; id: "logout"; label: string };
 
 export function HeaderNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = useMemo(() => getSupabaseClient(), []);
   const [openPath, setOpenPath] = useState<string | null>(null);
   const open = openPath === pathname;
 
-  const items: NavItem[] = useMemo(
-    () => [
-      { href: "/vacatures", label: "Vacatures" },
-      { href: "/dashboard", label: "Mijn vacatures" },
-      { href: "/create", label: "Vacature maken" },
-      { href: "/onboarding", label: "Bedrijfsstijl" },
-      { href: "/instellingen", label: "Instellingen" },
-      { href: "/login", label: "Inloggen" },
-      { href: "/pricing", label: "Pricing" },
-    ],
-    []
-  );
+  const [authState, setAuthState] = useState<
+    | { status: "loading" }
+    | { status: "logged_out" }
+    | { status: "logged_in"; role: "employer" | "candidate" | "unknown" }
+  >({ status: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!supabase) {
+          if (!cancelled) setAuthState({ status: "logged_out" });
+          return;
+        }
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) {
+          if (!cancelled) setAuthState({ status: "logged_out" });
+          return;
+        }
+        const res = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = (await res.json().catch(() => ({}))) as { role?: string | null };
+        const role =
+          res.ok && json.role === "employer"
+            ? "employer"
+            : res.ok && json.role === "candidate"
+              ? "candidate"
+              : "unknown";
+        if (!cancelled) setAuthState({ status: "logged_in", role });
+      } catch {
+        if (!cancelled) setAuthState({ status: "logged_out" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
+  const items: NavItem[] = useMemo(() => {
+    // Public / logged-out navigation
+    if (authState.status !== "logged_in") {
+      return [
+        { kind: "link", href: "/vacatures", label: "Vacatures" },
+        { kind: "link", href: "/pricing", label: "Pricing" },
+      ];
+    }
+
+    // Candidate navigation
+    if (authState.role === "candidate") {
+      return [
+        { kind: "link", href: "/vacatures", label: "Vacatures" },
+        { kind: "link", href: "/kandidaat", label: "Kandidaat" },
+        { kind: "link", href: "/instellingen", label: "Instellingen" },
+        { kind: "action", id: "logout", label: "Uitloggen" },
+      ];
+    }
+
+    // Employer (and unknown) navigation
+    return [
+      { kind: "link", href: "/vacatures", label: "Vacatures" },
+      { kind: "link", href: "/dashboard", label: "Mijn vacatures" },
+      { kind: "link", href: "/create", label: "Vacature maken" },
+      { kind: "link", href: "/onboarding", label: "Bedrijfsstijl" },
+      { kind: "link", href: "/instellingen", label: "Instellingen" },
+      { kind: "action", id: "logout", label: "Uitloggen" },
+      { kind: "link", href: "/pricing", label: "Pricing" },
+    ];
+  }, [authState]);
+
+  async function doLogout() {
+    try {
+      await supabase?.auth.signOut();
+    } finally {
+      setAuthState({ status: "logged_out" });
+      setOpenPath(null);
+      router.push("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <>
       {/* Desktop nav (large screens) */}
       <nav className="hidden items-center gap-4 text-sm text-zinc-700 dark:text-zinc-300 lg:flex">
-        {items.map((it) => (
-          <Link
-            key={it.href}
-            href={it.href}
-            className={cn(
-              "hover:text-zinc-950 dark:hover:text-white",
-              pathname === it.href ? "text-zinc-950 dark:text-white" : ""
-            )}
-          >
-            {it.label}
-          </Link>
-        ))}
+        {items.map((it) =>
+          it.kind === "link" ? (
+            <Link
+              key={it.href}
+              href={it.href}
+              className={cn(
+                "hover:text-zinc-950 dark:hover:text-white",
+                pathname === it.href ? "text-zinc-950 dark:text-white" : ""
+              )}
+            >
+              {it.label}
+            </Link>
+          ) : (
+            <button
+              key={it.id}
+              type="button"
+              onClick={doLogout}
+              className="hover:text-zinc-950 dark:hover:text-white"
+            >
+              {it.label}
+            </button>
+          )
+        )}
       </nav>
 
       {/* Mobile / tablet menu button */}
@@ -88,21 +173,31 @@ export function HeaderNav() {
               </div>
 
               <div className="px-2 pb-2">
-                {items.map((it) => (
-                  <Link
-                    key={it.href}
-                    href={it.href}
-                    className={cn(
-                      "flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-zinc-900 hover:bg-amber-50/60 dark:text-zinc-100 dark:hover:bg-black",
-                      pathname === it.href
-                        ? "bg-amber-50/70 dark:bg-black"
-                        : ""
-                    )}
-                  >
-                    <span>{it.label}</span>
-                    <span className="text-zinc-400">→</span>
-                  </Link>
-                ))}
+                {items.map((it) =>
+                  it.kind === "link" ? (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      className={cn(
+                        "flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-zinc-900 hover:bg-amber-50/60 dark:text-zinc-100 dark:hover:bg-black",
+                        pathname === it.href ? "bg-amber-50/70 dark:bg-black" : ""
+                      )}
+                    >
+                      <span>{it.label}</span>
+                      <span className="text-zinc-400">→</span>
+                    </Link>
+                  ) : (
+                    <button
+                      key={it.id}
+                      type="button"
+                      onClick={doLogout}
+                      className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-medium text-zinc-900 hover:bg-amber-50/60 dark:text-zinc-100 dark:hover:bg-black"
+                    >
+                      <span>{it.label}</span>
+                      <span className="text-zinc-400">→</span>
+                    </button>
+                  )
+                )}
               </div>
 
               <div className="border-t border-amber-200/80 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
