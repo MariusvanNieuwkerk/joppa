@@ -77,70 +77,42 @@ export default function Home() {
 
       <div className="mt-10 rounded-2xl border border-amber-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Waar komt je vacature te staan?
+          Zo werkt Joppa voor bedrijven
         </div>
         <div className="mt-3 grid gap-4 text-sm text-zinc-600 dark:text-zinc-300 md:grid-cols-3">
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-4 dark:border-zinc-800 dark:bg-black">
             <div className="font-medium text-zinc-900 dark:text-zinc-100">
-              Op Joppa (altijd)
+              1) Maak ’m in de wizard
             </div>
             <p className="mt-1 leading-6">
-              Elke vacature krijgt een mooie pagina op Joppa die je kunt delen.
+              Stap‑voor‑stap invullen in gewone taal. Joppa helpt je van ruwe input
+              naar een complete vacature.
             </p>
           </div>
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-4 dark:border-zinc-800 dark:bg-black">
             <div className="font-medium text-zinc-900 dark:text-zinc-100">
-              Op Indeed (altijd)
+              2) Check en keur goed
             </div>
             <p className="mt-1 leading-6">
-              Je vacature kan ook op Indeed. Meestal is dit één keer koppelen,
-              daarna gaat het vanzelf.
+              Je reviewt gegevens, teksten per kanaal en beelden. Social posts zie je
+              in het juiste formaat: goedkeuren, kopiëren en delen.
             </p>
           </div>
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-4 dark:border-zinc-800 dark:bg-black">
             <div className="font-medium text-zinc-900 dark:text-zinc-100">
-              Op social (makkelijk)
+              3) Live + verspreiden
             </div>
             <p className="mt-1 leading-6">
-              Je krijgt kant‑en‑klare teksten en beelden voor LinkedIn,
-              Instagram, Facebook en TikTok. Je beoordeelt ze in het juiste formaat,
-              keurt goed en deelt (of downloadt) meteen.
+              Zet je vacature live op Joppa (deelbare pagina). Indeed loopt mee (na
+              koppelen) en je export staat klaar.
             </p>
           </div>
         </div>
         <p className="mt-4 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-          Soms vraagt Indeed om een korte goedkeuring of instelling. Wij helpen
-          je daar stap‑voor‑stap doorheen.
+          Resultaat: een strakke vacaturepagina + teksten en beelden per kanaal, klaar om
+          te plaatsen.
         </p>
       </div>
-
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
-        <FeatureCard
-          title="Makkelijk voor iedereen"
-          body="Geen jargon, geen ingewikkelde knoppen. Je ziet direct wat je krijgt en past het aan in gewone taal."
-        />
-        <FeatureCard
-          title="Altijd strak en consistent"
-          body="Tekst en visuals sluiten op elkaar aan. Handig als je meerdere vacatures maakt, of meerdere kanalen beheert."
-        />
-        <FeatureCard
-          title="Klaar om te plaatsen"
-          body="Je krijgt een pakket met teksten en beelden in de juiste formaten. Kopiëren, downloaden, klaar."
-        />
-      </div>
-    </div>
-  );
-}
-
-function FeatureCard({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-2xl border border-amber-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-        {title}
-      </div>
-      <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-        {body}
-      </p>
     </div>
   );
 }

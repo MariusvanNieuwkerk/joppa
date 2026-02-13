@@ -6,7 +6,7 @@
 **Wat je krijgt:**
 - **Snel live**: publiceer je vacature op Joppa en deel de link met één klik.
 - **Indeed inbegrepen**: je vacature kan ook op Indeed (meestal één keer koppelen, daarna gaat het vanzelf).
-- **Klaar om te posten**: download een pakket met teksten + visuals voor LinkedIn, Instagram, Facebook en TikTok.
+- **Klaar om te posten**: beoordeel social posts in het juiste formaat, keur goed en deel (of download) teksten + beelden voor LinkedIn, Instagram, Facebook en TikTok.
 
 ## Wat is Joppa?
 Joppa helpt bedrijven om **snel een mooie, strakke vacature** te maken en die daarna **makkelijk te plaatsen** op meerdere kanalen.
@@ -18,7 +18,7 @@ Je schrijft in gewone taal wie je zoekt. Joppa maakt daar een complete set van:
 - een **downloadpakket** dat je zo kunt gebruiken
 
 ## Belofte (kort)
-“Van brain dump naar publicatie‑klare vacaturecampagne, zonder gedoe.”
+“Van losse input naar publicatie‑klare vacaturecampagne, zonder gedoe.”
 
 ## Verdienmodel (pakketten & prijzen — NL)
 Joppa is een abonnement. **Indeed is inbegrepen** (met een logische limiet), zodat mensen direct waarde voelen en we kunnen groeien naar fase 2.
@@ -36,13 +36,13 @@ Joppa is een abonnement. **Indeed is inbegrepen** (met een logische limiet), zod
 - betere exports + versiegeschiedenis (netjes)
 - templates/bedrijfsstijl volledig benutten
 
-**Business — vanaf €499/m (jaar) of €599/m (maand)**
+**Enterprise — vanaf €499/m (jaar) of €599/m (maand)**
 - **onbeperkt / maatwerk**
 - multi‑brand/labels
 - integraties (ATS, tracking, etc.)
 - support/SLA + onboarding
 
-### Add‑ons (waar marge zit)
+### Extra’s (waar marge zit)
 - Extra teamleden: **€15–€25 / gebruiker / maand**
 - Extra vacatures: bundels (bijv. **+50** voor **€79–€129 / maand**)
 - Onboarding “done with you” (incl. Indeed setup): **€750–€1.500** eenmalig
@@ -83,7 +83,7 @@ Doel: extreem frictieloos vacatures live krijgen.
 **Kanalen (v1/v1.5):**
 - **Joppa website**: altijd (deelbare vacaturepagina)
 - **Indeed**: altijd onderdeel van de belofte (meestal één keer koppelen, daarna automatisch)
-- **Social kanalen**: via **kant‑en‑klaar pakket** (copy + visuals) zodat je direct kunt posten
+- **Social kanalen**: via **review + goedkeuren** in Joppa en daarna **delen of downloaden** (copy + beelden) zodat je direct kunt posten
 
 ### Fase 2 — Kandidaten (demand + matching)
 Doel: kandidaten krijgen eigen login en workflow met aanbevelingen/matching op basis van:
@@ -93,13 +93,15 @@ Doel: kandidaten krijgen eigen login en workflow met aanbevelingen/matching op b
 
 ## Productprincipes (waardoor we later makkelijk doorgroeien)
 
-### 1) Het kernobject is een “Job Campaign”
+### 1) Het kernobject is een “vacaturecampagne”
 Geen losse velden, maar één campagne die alles bevat:
-- input (brain dump)
+- input (ruwe input / brief)
 - structuur (titel, locatie, etc.)
 - teksten per kanaal
 - visuals
 - status (concept/live) + public link
+
+> Dit is het object dat we overal hergebruiken (wizard → cockpit → public page → distributie).
 
 ### 2) “Makkelijk veranderen”
 Alles is aanpasbaar en je kunt altijd terug naar een vorige versie.
@@ -126,33 +128,41 @@ Als iemand een website invult, kan Joppa (op verzoek) een voorstel doen voor de 
 
 ## UX workflow (v1/v1.5)
 
-### 1) Bedrijfsstijl (optioneel)
+### 1) Bedrijfsstijl (eerste keer / verplicht voor bedrijven)
 Bedrijfsnaam, hoofdkleur, schrijfstijl, korte intro.
 
-### 2) Vacature maken
-Eén grote invoer: “Vertel wie je zoekt”.
+### 2) Vacature maken (wizard)
+Een stap‑voor‑stap wizard in gewone taal (titel/locatie, taken, must‑haves, etc.). Joppa helpt waar nodig (bijv. ruwe tekst → bullets).
 
-### 3) Bewerken in de cockpit
-Een overzichtelijke plek om:
-- details te controleren
-- teksten te verbeteren (per kanaal)
-- visuals te kiezen
+### 3) Review in de cockpit
+Een overzichtelijke plek om per onderdeel te controleren en te finetunen:
+- **Gegevens** (basis)
+- **Teksten** per kanaal + versie opslaan
+- **Beelden** (templates in v1)
+- **Social**: previews per kanaal, **goedkeuren**, **kopiëren** en **delen**
+- **Plaatsen & export**: live zetten, link delen, exportpakket
 
 ### 4) Live zetten + plaatsen
 - Vacaturepagina op Joppa live
 - Indeed erbij (na koppeling)
-- Downloadpakket voor socials
+- Social: na goedkeuring direct delen (waar mogelijk) of downloaden
 
 ## Winnende v1/v1.5 scope (wat we nu bouwen)
-1) **Public job page** (Joppa)
+1) **Publieke vacaturepagina** (Joppa)
 2) **Indeed altijd** (feed + koppeling, zodat live vacatures doorgezet worden)
-3) **Export pack** dat écht werkt (zip met teksten + visuals)
+3) **Exportpakket** dat écht werkt (zip met teksten + beelden)
 4) **Mijn vacatures** (mini library: lijst, status, bewerken, live zetten)
+5) **Social review** (preview, goedkeuren, kopieer/delen/download)
 
 ## Tech (v1)
 - Next.js (App Router) + TypeScript + Tailwind
 - Supabase (Postgres/Auth/Storage) voor multi‑tenant data + permissions
 - Later: AI orchestration + background processing
+
+### Rollen & inloggen (v1)
+- 2 rollen: **bedrijf (employer)** en **werkzoekende (candidate)**
+- Simpele e‑mail/wachtwoord login (SSO later)
+- Role‑based UI en guards (bedrijven zien wizard/cockpit; werkzoekenden zien browse)
 
 ## Huidige implementatie (in deze repo)
 - Homepage: `/`
@@ -162,8 +172,14 @@ Een overzichtelijke plek om:
 - Cockpit: `/campaigns/[id]`
 - Bedrijfspagina: `/bedrijven/[companySlug]`
 - Public vacature: `/jobs/[companySlug]/[jobSlug]`
+- Vacatures (public): `/vacatures`
+- Instellingen: `/instellingen`
+- Inloggen keuze: `/login`
+- Inloggen bedrijf: `/login/bedrijf`
+- Inloggen werkzoekende: `/login/werkzoekende`
+- Prijzen: `/prijzen` (met redirect vanaf `/pricing`)
 - Indeed feed: `/api/indeed/feed.xml` (Supabase‑ready, met fallback)
-- Downloadpakket: in cockpit tab “Publish/Export” (download zip)
+- Exportpakket: in cockpit tab “Plaatsen & export” (download zip)
 
 ## Later (roadmap)
 - Echte AI generatie met runs/traceability + “regenereer alleen dit stuk”
