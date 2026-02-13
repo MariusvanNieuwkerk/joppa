@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
 
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -16,16 +17,14 @@ export function HeaderCta() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    async function refreshFromSession(session: Session | null | undefined) {
       try {
-        if (!supabase) return;
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+        const token = session?.access_token;
         if (!token) {
           if (!cancelled) setCta({ kind: "login" });
           return;
         }
-
         const res = await fetch("/api/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -37,9 +36,25 @@ export function HeaderCta() {
       } catch {
         if (!cancelled) setCta({ kind: "login" });
       }
+    }
+
+    (async () => {
+      try {
+        if (!supabase) return;
+        const { data } = await supabase.auth.getSession();
+        await refreshFromSession(data.session);
+      } catch {
+        if (!cancelled) setCta({ kind: "login" });
+      }
     })();
+
+    const sub = supabase?.auth.onAuthStateChange((_event, session) => {
+      void refreshFromSession(session);
+    });
+
     return () => {
       cancelled = true;
+      sub?.data.subscription.unsubscribe();
     };
   }, [supabase]);
 

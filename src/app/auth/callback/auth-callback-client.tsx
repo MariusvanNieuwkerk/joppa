@@ -17,7 +17,15 @@ export function AuthCallbackClient() {
       try {
         if (!supabase) throw new Error("Supabase is not configured");
         const role = (sp.get("role") ?? "").toLowerCase();
-        const next = sp.get("next") ?? "/";
+        const nextRaw = sp.get("next") ?? "/";
+        const next =
+          nextRaw === "/" || nextRaw === "/dashboard"
+            ? role === "employer"
+              ? "/create"
+              : role === "candidate"
+                ? "/kandidaat"
+                : "/"
+            : nextRaw;
 
         const { data } = await supabase.auth.getSession();
         const accessToken = data.session?.access_token;

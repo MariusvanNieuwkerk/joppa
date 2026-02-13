@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
 
 import { cn } from "@/lib/cn";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -26,14 +27,10 @@ export function HeaderNav() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    async function refreshFromSession(session: Session | null | undefined) {
       try {
-        if (!supabase) {
-          if (!cancelled) setAuthState({ status: "logged_out" });
-          return;
-        }
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+        const token = session?.access_token;
         if (!token) {
           if (!cancelled) setAuthState({ status: "logged_out" });
           return;
@@ -52,9 +49,28 @@ export function HeaderNav() {
       } catch {
         if (!cancelled) setAuthState({ status: "logged_out" });
       }
+    }
+
+    (async () => {
+      try {
+        if (!supabase) {
+          if (!cancelled) setAuthState({ status: "logged_out" });
+          return;
+        }
+        const { data } = await supabase.auth.getSession();
+        await refreshFromSession(data.session);
+      } catch {
+        if (!cancelled) setAuthState({ status: "logged_out" });
+      }
     })();
+
+    const sub = supabase?.auth.onAuthStateChange((_event, session) => {
+      void refreshFromSession(session);
+    });
+
     return () => {
       cancelled = true;
+      sub?.data.subscription.unsubscribe();
     };
   }, [supabase]);
 

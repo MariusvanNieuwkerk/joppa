@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 
 export default function CandidateLoginPage() {
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseClient(), []);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const passwordRef = useRef<HTMLInputElement | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [sent, setSent] = useState(false);
+  const [signedUp, setSignedUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<"password" | "magic">("password");
 
   if (!isSupabaseConfigured() || !supabase) {
     return (
@@ -36,109 +37,52 @@ export default function CandidateLoginPage() {
         </div>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Inloggen</h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-          Log in met wachtwoord (snelste) of gebruik een login link.
+          Log in met je e‑mail en wachtwoord.
         </p>
       </div>
 
       <div className="rounded-2xl border border-amber-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mb-4 inline-flex rounded-full border border-zinc-200 bg-white p-1 text-xs dark:border-zinc-800 dark:bg-black">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("password");
-              setSent(false);
-              setError(null);
-            }}
-            className={`rounded-full px-3 py-1.5 font-medium ${
-              mode === "password"
-                ? "bg-zinc-950 text-white dark:bg-white dark:text-black"
-                : "text-zinc-700 dark:text-zinc-300"
-            }`}
-          >
-            Wachtwoord
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("magic");
-              setSent(false);
-              setError(null);
-            }}
-            className={`rounded-full px-3 py-1.5 font-medium ${
-              mode === "magic"
-                ? "bg-zinc-950 text-white dark:bg-white dark:text-black"
-                : "text-zinc-700 dark:text-zinc-300"
-            }`}
-          >
-            Login link
-          </button>
-        </div>
-
-        {mode === "magic" && sent ? (
+        {signedUp ? (
           <div className="space-y-2">
             <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              Check je inbox
+              Account aangemaakt
             </div>
             <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-              We hebben een login link gestuurd naar <b>{email}</b>.
+              Als Supabase e‑mailbevestiging aan heeft staan, krijg je nu een mail
+              om je account te bevestigen. Daarna kun je hier inloggen met je
+              wachtwoord.
             </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Geen mail? Check je spam of probeer opnieuw.
-            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setSignedUp(false)}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                Terug naar inloggen
+              </button>
+            </div>
           </div>
-        ) : mode === "magic" ? (
-          <>
-            <label className="text-sm font-medium">E‑mail</label>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="naam@email.com"
-              className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-zinc-400 dark:border-zinc-800 dark:bg-black dark:focus:border-zinc-600"
-            />
-            {error ? (
-              <div className="mt-3 rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 text-xs text-amber-900/90 dark:border-zinc-800 dark:bg-black dark:text-zinc-200">
-                {error}
-              </div>
-            ) : null}
-            <button
-              disabled={busy || !email.includes("@")}
-              onClick={async () => {
-                setBusy(true);
-                setError(null);
-                try {
-                  const redirectTo = `${window.location.origin}/auth/callback?role=candidate&next=/kandidaat`;
-                  const { error } = await supabase.auth.signInWithOtp({
-                    email,
-                    options: { emailRedirectTo: redirectTo },
-                  });
-                  if (error) throw error;
-                  setSent(true);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "Er ging iets mis.");
-                } finally {
-                  setBusy(false);
-                }
-              }}
-              className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              {busy ? "Even bezig…" : "Stuur login link"}
-            </button>
-          </>
         ) : (
           <>
             <label className="text-sm font-medium">E‑mail</label>
             <input
+              ref={emailRef}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
               placeholder="naam@email.com"
+              autoComplete="email"
               className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-zinc-400 dark:border-zinc-800 dark:bg-black dark:focus:border-zinc-600"
             />
             <label className="mt-4 block text-sm font-medium">Wachtwoord</label>
             <input
+              ref={passwordRef}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
               placeholder="••••••••"
               type="password"
+              autoComplete="current-password"
               className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-zinc-400 dark:border-zinc-800 dark:bg-black dark:focus:border-zinc-600"
             />
 
@@ -150,14 +94,19 @@ export default function CandidateLoginPage() {
 
             <div className="mt-4 grid gap-2">
               <button
-                disabled={busy || !email.includes("@") || password.length < 6}
+                disabled={busy}
                 onClick={async () => {
                   setBusy(true);
                   setError(null);
                   try {
+                    const e = (emailRef.current?.value ?? email).trim();
+                    const p = passwordRef.current?.value ?? password;
+                    if (!e.includes("@") || p.length < 6) {
+                      throw new Error("Vul een geldig e‑mailadres en een wachtwoord (min. 6 tekens) in.");
+                    }
                     const { data, error } = await supabase.auth.signInWithPassword({
-                      email,
-                      password,
+                      email: e,
+                      password: p,
                     });
                     if (error) throw error;
                     const token = data.session?.access_token;
@@ -174,7 +123,7 @@ export default function CandidateLoginPage() {
 
                     router.push("/kandidaat");
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : "Er ging iets mis.");
+                    setError(toFriendlyAuthError(e));
                   } finally {
                     setBusy(false);
                   }
@@ -185,22 +134,26 @@ export default function CandidateLoginPage() {
               </button>
               <button
                 type="button"
-                disabled={busy || !email.includes("@") || password.length < 6}
+                disabled={busy}
                 onClick={async () => {
                   setBusy(true);
                   setError(null);
                   try {
+                    const e = (emailRef.current?.value ?? email).trim();
+                    const p = passwordRef.current?.value ?? password;
+                    if (!e.includes("@") || p.length < 6) {
+                      throw new Error("Vul een geldig e‑mailadres en een wachtwoord (min. 6 tekens) in.");
+                    }
                     const { data, error } = await supabase.auth.signUp({
-                      email,
-                      password,
+                      email: e,
+                      password: p,
                     });
                     if (error) throw error;
 
                     const token = data.session?.access_token;
                     if (!token) {
-                      throw new Error(
-                        "Account aangemaakt. Bevestig je e‑mail en log daarna in."
-                      );
+                      setSignedUp(true);
+                      return;
                     }
 
                     await fetch("/api/auth/set-role", {
@@ -214,7 +167,29 @@ export default function CandidateLoginPage() {
 
                     router.push("/kandidaat");
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : "Er ging iets mis.");
+                    const friendly = toFriendlyAuthError(e);
+                    setError(friendly);
+                    if (friendly.includes("al een account")) {
+                      try {
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                          email: (emailRef.current?.value ?? email).trim(),
+                          password: passwordRef.current?.value ?? password,
+                        });
+                        if (!error && data.session?.access_token) {
+                          await fetch("/api/auth/set-role", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${data.session.access_token}`,
+                            },
+                            body: JSON.stringify({ role: "candidate" }),
+                          });
+                          router.push("/kandidaat");
+                        }
+                      } catch {
+                        // ignore
+                      }
+                    }
                   } finally {
                     setBusy(false);
                   }
@@ -246,5 +221,32 @@ export default function CandidateLoginPage() {
       </div>
     </div>
   );
+}
+
+function toFriendlyAuthError(err: unknown) {
+  const msg =
+    err instanceof Error
+      ? err.message
+      : typeof err === "string"
+        ? err
+        : "Er ging iets mis.";
+  const lower = msg.toLowerCase();
+
+  if (lower.includes("email rate limit") || lower.includes("rate limit")) {
+    return "Te veel pogingen achter elkaar. Wacht even (5–15 min) of zet ‘Confirm sign up’ tijdelijk uit in Supabase Auth → Email.";
+  }
+  if (lower.includes("signups not allowed") || lower.includes("signup is disabled")) {
+    return "Account aanmaken staat uit in Supabase. Zet signup aan in Supabase Auth settings (Disable signups = uit).";
+  }
+  if (lower.includes("user already registered") || lower.includes("already registered")) {
+    return "Dit e‑mailadres heeft al een account. Klik op ‘Inloggen’.";
+  }
+  if (lower.includes("invalid login credentials")) {
+    return "Deze combinatie klopt niet. Controleer je e‑mail en wachtwoord.";
+  }
+  if (lower.includes("password") && lower.includes("6")) {
+    return "Je wachtwoord moet minimaal 6 tekens zijn.";
+  }
+  return msg;
 }
 

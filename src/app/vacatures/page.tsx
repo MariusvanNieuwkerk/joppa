@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+
+import { getSupabaseClient } from "@/lib/supabase";
 
 type PublicJobListItem = {
   id: string;
@@ -19,6 +22,11 @@ function uniq(values: Array<string | null | undefined>) {
 }
 
 export default function VacaturesPage() {
+  const supabase = useMemo(() => getSupabaseClient(), []);
+  const [viewerRole, setViewerRole] = useState<
+    "loading" | "logged_out" | "employer" | "candidate" | "unknown"
+  >("loading");
+
   const [jobs, setJobs] = useState<PublicJobListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,10 +38,39 @@ export default function VacaturesPage() {
 
   useEffect(() => {
     let cancelled = false;
+
+    async function refreshRoleFromSession(session: Session | null | undefined) {
+      try {
+        const token = session?.access_token;
+        if (!token) {
+          if (!cancelled) setViewerRole("logged_out");
+          return;
+        }
+        const res = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = (await res.json().catch(() => ({}))) as { role?: string | null };
+        if (!cancelled) {
+          if (res.ok && json.role === "employer") setViewerRole("employer");
+          else if (res.ok && json.role === "candidate") setViewerRole("candidate");
+          else setViewerRole("unknown");
+        }
+      } catch {
+        if (!cancelled) setViewerRole("logged_out");
+      }
+    }
+
     (async () => {
       setLoading(true);
       setError(null);
       try {
+        if (!supabase) {
+          if (!cancelled) setViewerRole("logged_out");
+        } else {
+          const { data } = await supabase.auth.getSession();
+          await refreshRoleFromSession(data.session);
+        }
+
         const res = await fetch("/api/public/jobs");
         const json = (await res.json()) as { jobs?: PublicJobListItem[]; error?: string };
         if (!res.ok) throw new Error(json.error ?? "Kon vacatures niet laden.");
@@ -46,10 +83,15 @@ export default function VacaturesPage() {
         if (!cancelled) setLoading(false);
       }
     })();
+
+    const sub = supabase?.auth.onAuthStateChange((_event, session) => {
+      void refreshRoleFromSession(session);
+    });
     return () => {
       cancelled = true;
+      sub?.data.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const locations = useMemo(
     () => uniq(jobs.map((j) => j.location)).sort((a, b) => a.localeCompare(b)),
@@ -193,12 +235,28 @@ export default function VacaturesPage() {
             Probeer een andere zoekterm of wis je filters.
           </p>
           <div className="mt-4">
-            <Link
-              href="/create"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Nieuwe vacature maken
-            </Link>
+            {viewerRole === "employer" ? (
+              <Link
+                href="/create"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                Nieuwe vacature maken
+              </Link>
+            ) : viewerRole === "candidate" ? (
+              <Link
+                href="/kandidaat"
+                className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
+              >
+                Naar kandidaatomgeving
+              </Link>
+            ) : viewerRole === "logged_out" ? (
+              <Link
+                href="/login"
+                className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
+              >
+                Log in
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : null}
