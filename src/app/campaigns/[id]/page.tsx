@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -99,13 +99,14 @@ const channels: Array<{ id: Channel; label: string }> = [
 export default function JobCockpitPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const sp = useSearchParams();
   const tab = sp.get("tab") ?? "overview";
 
   const demoCompany = useMemo(() => getCompany(), []);
-  const demoJob = useMemo(() => getJob(params.id), [params.id]);
+  const demoJob = useMemo(() => getJob(id), [id]);
 
   const [mode, setMode] = useState<"live" | "demo">("live");
   const [company, setCompany] = useState<AnyCompany | null>(null);
@@ -120,7 +121,7 @@ export default function JobCockpitPage({
     (async () => {
       try {
         const res = await fetch(
-          `/api/campaigns/${params.id}`,
+          `/api/campaigns/${id}`,
           await withAuth({ method: "GET" })
         );
         if (!res.ok) throw new Error("not ok");
@@ -143,7 +144,7 @@ export default function JobCockpitPage({
     return () => {
       cancelled = true;
     };
-  }, [params.id, demoCompany, demoJob]);
+  }, [id, demoCompany, demoJob]);
 
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -161,9 +162,9 @@ export default function JobCockpitPage({
       const c = contentsLatest?.website;
       return (c?.content?.body as string) ?? "";
     }
-    const c = getLatestContent(params.id, "website");
+    const c = getLatestContent(id, "website");
     return (c?.content?.body as string) ?? "";
-  }, [params.id, mode, contentsLatest]);
+  }, [id, mode, contentsLatest]);
   const [copyBody, setCopyBody] = useState(initial);
 
   useEffect(() => {
