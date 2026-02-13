@@ -9,9 +9,10 @@ export default function Home() {
             Maak in minuten een mooie, strakke vacature.
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-            Vertel gewoon wie je zoekt (in je eigen woorden). Joppa zet het om
-            naar een complete vacaturetekst én een set visuals die je zo kunt
-            plaatsen op je kanalen.
+            Jij vult stap‑voor‑stap de basis in (in gewone taal). Joppa maakt daar
+            meteen een complete vacature van: teksten per kanaal + beelden. Jij
+            checkt, keurt social posts goed en zet ’m daarna met één klik live en
+            klaar om te delen.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
