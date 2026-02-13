@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-
-import { getSupabaseClient } from "@/lib/supabase";
+import { useAuthRole } from "@/hooks/use-auth-role";
 
 type PublicJobListItem = {
   id: string;
@@ -22,10 +20,13 @@ function uniq(values: Array<string | null | undefined>) {
 }
 
 export default function VacaturesPage() {
-  const supabase = useMemo(() => getSupabaseClient(), []);
-  const [viewerRole, setViewerRole] = useState<
-    "loading" | "logged_out" | "employer" | "candidate" | "unknown"
-  >("loading");
+  const auth = useAuthRole();
+  const viewerRole: "loading" | "logged_out" | "employer" | "candidate" | "unknown" =
+    auth.status === "loading"
+      ? "loading"
+      : auth.status === "logged_out"
+        ? "logged_out"
+        : auth.role;
 
   const [jobs, setJobs] = useState<PublicJobListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,38 +40,10 @@ export default function VacaturesPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function refreshRoleFromSession(session: Session | null | undefined) {
-      try {
-        const token = session?.access_token;
-        if (!token) {
-          if (!cancelled) setViewerRole("logged_out");
-          return;
-        }
-        const res = await fetch("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = (await res.json().catch(() => ({}))) as { role?: string | null };
-        if (!cancelled) {
-          if (res.ok && json.role === "employer") setViewerRole("employer");
-          else if (res.ok && json.role === "candidate") setViewerRole("candidate");
-          else setViewerRole("unknown");
-        }
-      } catch {
-        if (!cancelled) setViewerRole("logged_out");
-      }
-    }
-
     (async () => {
       setLoading(true);
       setError(null);
       try {
-        if (!supabase) {
-          if (!cancelled) setViewerRole("logged_out");
-        } else {
-          const { data } = await supabase.auth.getSession();
-          await refreshRoleFromSession(data.session);
-        }
-
         const res = await fetch("/api/public/jobs");
         const json = (await res.json()) as { jobs?: PublicJobListItem[]; error?: string };
         if (!res.ok) throw new Error(json.error ?? "Kon vacatures niet laden.");
@@ -83,15 +56,10 @@ export default function VacaturesPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-
-    const sub = supabase?.auth.onAuthStateChange((_event, session) => {
-      void refreshRoleFromSession(session);
-    });
     return () => {
       cancelled = true;
-      sub?.data.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const locations = useMemo(
     () => uniq(jobs.map((j) => j.location)).sort((a, b) => a.localeCompare(b)),

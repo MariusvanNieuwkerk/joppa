@@ -1,10 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-
-import { getSupabaseClient } from "@/lib/supabase";
+import { useAuthRole } from "@/hooks/use-auth-role";
 
 type Cta =
   | { kind: "login" }
@@ -12,51 +9,14 @@ type Cta =
   | { kind: "vacatures" };
 
 export function HeaderCta() {
-  const supabase = useMemo(() => getSupabaseClient(), []);
-  const [cta, setCta] = useState<Cta>({ kind: "login" });
+  const auth = useAuthRole();
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function refreshFromSession(session: Session | null | undefined) {
-      try {
-        const token = session?.access_token;
-        if (!token) {
-          if (!cancelled) setCta({ kind: "login" });
-          return;
-        }
-        const res = await fetch("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = (await res.json().catch(() => ({}))) as { role?: string | null };
-        if (!cancelled) {
-          if (res.ok && json.role === "employer") setCta({ kind: "new_job" });
-          else setCta({ kind: "vacatures" });
-        }
-      } catch {
-        if (!cancelled) setCta({ kind: "login" });
-      }
-    }
-
-    (async () => {
-      try {
-        if (!supabase) return;
-        const { data } = await supabase.auth.getSession();
-        await refreshFromSession(data.session);
-      } catch {
-        if (!cancelled) setCta({ kind: "login" });
-      }
-    })();
-
-    const sub = supabase?.auth.onAuthStateChange((_event, session) => {
-      void refreshFromSession(session);
-    });
-
-    return () => {
-      cancelled = true;
-      sub?.data.subscription.unsubscribe();
-    };
-  }, [supabase]);
+  const cta: Cta =
+    auth.status !== "logged_in"
+      ? { kind: "login" }
+      : auth.role === "employer"
+        ? { kind: "new_job" }
+        : { kind: "vacatures" };
 
   if (cta.kind === "new_job") {
     return (

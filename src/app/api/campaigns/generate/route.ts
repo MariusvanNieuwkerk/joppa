@@ -3,28 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireEmployer } from "@/lib/auth-guard";
 import { getDbOrThrow, getOrCreateDefaultCompany } from "@/lib/supabase-db";
 import { slugify } from "@/lib/slug";
-import { geminiGenerateText, extractJsonFromText } from "@/lib/gemini";
-import { mockGenerateCampaign } from "@/lib/mock-generate";
+import { allCampaignChannels, generateCampaign } from "@/lib/campaign-generation";
 
 export const runtime = "nodejs";
-
-type GeminiCampaign = {
-  job: {
-    title: string;
-    location?: string;
-    seniority?: string;
-    employmentType?: string;
-    jobSlug?: string;
-    summary?: string;
-  };
-  contents: Record<
-    string,
-    {
-      headline?: string;
-      body: string;
-    }
-  >;
-};
 
 export async function POST(req: NextRequest) {
   const guard = await requireEmployer(req);
@@ -80,6 +61,7 @@ export async function POST(req: NextRequest) {
         brandTone: company.brand_tone ?? undefined,
         brandPitch: company.brand_pitch ?? undefined,
       },
+      variant: "brain_dump",
     });
 
     const jobSlug =
@@ -103,16 +85,7 @@ export async function POST(req: NextRequest) {
 
     if (updErr) throw updErr;
 
-    const channels = [
-      "website",
-      "indeed",
-      "linkedin",
-      "instagram",
-      "facebook",
-      "tiktok",
-    ] as const;
-
-    for (const channel of channels) {
+    for (const channel of allCampaignChannels) {
       const c = generated.contents[channel] ?? generated.contents.website;
       if (!c?.body) continue;
       const { error: contentErr } = await db.from("job_contents").insert({
@@ -143,82 +116,5 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: msg, jobId: job.id }, { status: 500 });
   }
-}
-
-async function generateCampaign(input: {
-  rawIntent: string;
-  company: { name: string; website?: string; brandTone?: string; brandPitch?: string };
-}): Promise<GeminiCampaign> {
-  if (!process.env.GEMINI_API_KEY) {
-    const fallback = mockGenerateCampaign({ rawIntent: input.rawIntent, company: null });
-    const contents: GeminiCampaign["contents"] = {};
-    for (const c of fallback.contents) {
-      // demo-db format uses { body }
-      contents[c.channel] = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        headline: (c.content as any)?.headline ?? undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        body: (c.content as any)?.body ?? "",
-      };
-    }
-    return {
-      job: {
-        title: fallback.jobPatch.title || "Vacature",
-        location: fallback.jobPatch.location,
-        seniority: fallback.jobPatch.seniority,
-        employmentType: undefined,
-        jobSlug: fallback.jobPatch.jobSlug,
-      },
-      contents,
-    };
-  }
-
-  const prompt = buildPrompt(input);
-  const { text } = await geminiGenerateText(prompt);
-  const json = extractJsonFromText<GeminiCampaign>(text);
-  return json;
-}
-
-function buildPrompt(input: {
-  rawIntent: string;
-  company: { name: string; website?: string; brandTone?: string; brandPitch?: string };
-}) {
-  return [
-    "Je bent een Nederlandse recruitment copywriter en campaign builder.",
-    "Doel: maak van een 'brain dump' een publicatie-klare vacature + kanaalteksten.",
-    "",
-    "Regels:",
-    "- Schrijf warm, menselijk, niet-technisch Nederlands.",
-    "- Gebruik geen buzzwords of overdreven AI-taal.",
-    "- Als iets ontbreekt, kies redelijke aannames (zonder bedragen te verzinnen).",
-    "- Output MOET geldige JSON zijn (geen markdown, geen uitleg).",
-    "",
-    "Geef JSON met dit schema:",
-    "{",
-    '  "job": { "title": string, "location"?: string, "seniority"?: string, "employmentType"?: string, "jobSlug"?: string, "summary"?: string },',
-    '  "contents": {',
-    '     "website": { "headline"?: string, "body": string },',
-    '     "indeed": { "headline"?: string, "body": string },',
-    '     "linkedin": { "headline"?: string, "body": string },',
-    '     "instagram": { "headline"?: string, "body": string },',
-    '     "facebook": { "headline"?: string, "body": string },',
-    '     "tiktok": { "headline"?: string, "body": string }',
-    "  }",
-    "}",
-    "",
-    "Schrijf website-body als een nette vacature met secties en duidelijke bullets.",
-    "Indeed-body mag compacter, maar compleet.",
-    "LinkedIn/Instagram/Facebook/TikTok: kort, wervend, met CTA en max ~1200 tekens. Gebruik spaarzaam emoji: liever geen.",
-    "",
-    `Bedrijf: ${input.company.name}`,
-    input.company.website ? `Website: ${input.company.website}` : "",
-    input.company.brandTone ? `Tone of voice: ${input.company.brandTone}` : "",
-    input.company.brandPitch ? `Pitch: ${input.company.brandPitch}` : "",
-    "",
-    "Brain dump:",
-    input.rawIntent,
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 

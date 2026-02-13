@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { RequireEmployer } from "@/components/require-employer";
 import { deleteJob, getCompany, listJobs, updateJob } from "@/lib/demo-db";
@@ -45,38 +45,50 @@ function formatDate(iso: string) {
   }).format(d);
 }
 
+function mapLiveJobs(companyId: string, rows: LiveJobRow[]): Job[] {
+  return (rows ?? []).map(
+    (j) =>
+      ({
+        id: j.id,
+        companyId,
+        status: j.status,
+        rawIntent: "",
+        title: j.title ?? undefined,
+        location: j.location ?? undefined,
+        seniority: j.seniority ?? undefined,
+        employmentType: j.employment_type ?? undefined,
+        extractedData: {},
+        jobSlug: j.job_slug ?? undefined,
+        publishedAt: j.published_at ?? undefined,
+        createdAt: j.created_at ?? new Date().toISOString(),
+        updatedAt: j.updated_at ?? new Date().toISOString(),
+      }) as Job
+  );
+}
+
 export default function DashboardPage() {
   const [mode, setMode] = useState<"live" | "demo">("live");
   const [jobs, setJobs] = useState<Job[]>(() => listJobs());
   const [company, setCompany] = useState<Company | LiveCompany | null>(null);
 
+  const applyLiveDashboard = useCallback((json: LiveDashboardResponse) => {
+    setMode("live");
+    setCompany(json.company);
+    setJobs(mapLiveJobs(json.company?.id ?? "company", json.jobs ?? []));
+  }, []);
+
+  const refreshLiveDashboard = useCallback(async () => {
+    const res = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
+    if (!res.ok) throw new Error("not ok");
+    const json = (await res.json()) as LiveDashboardResponse;
+    applyLiveDashboard(json);
+  }, [applyLiveDashboard]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
-        if (!res.ok) throw new Error("not ok");
-        const json = (await res.json()) as LiveDashboardResponse;
-        if (cancelled) return;
-        setMode("live");
-        setCompany(json.company);
-        setJobs(
-          (json.jobs ?? []).map((j) => ({
-            id: j.id,
-            companyId: json.company?.id ?? "company",
-            status: j.status,
-            rawIntent: "",
-            title: j.title ?? undefined,
-            location: j.location ?? undefined,
-            seniority: j.seniority ?? undefined,
-            employmentType: j.employment_type ?? undefined,
-            extractedData: {},
-            jobSlug: j.job_slug ?? undefined,
-            publishedAt: j.published_at ?? undefined,
-            createdAt: j.created_at ?? new Date().toISOString(),
-            updatedAt: j.updated_at ?? new Date().toISOString(),
-          })) as Job[]
-        );
+        await refreshLiveDashboard();
       } catch {
         if (cancelled) return;
         setMode("demo");
@@ -87,7 +99,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshLiveDashboard]);
 
   const publishedCount = useMemo(
     () => jobs.filter((j) => j.status === "published").length,
@@ -177,27 +189,10 @@ export default function DashboardPage() {
                             alert(json.error ?? "Verwijderen mislukt.");
                             return;
                           }
-                          const res2 = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
-                          if (res2.ok) {
-                            const json2 = (await res2.json()) as LiveDashboardResponse;
-                            setCompany(json2.company);
-                            setJobs(
-                              (json2.jobs ?? []).map((j) => ({
-                                id: j.id,
-                                companyId: json2.company?.id ?? "company",
-                                status: j.status,
-                                rawIntent: "",
-                                title: j.title ?? undefined,
-                                location: j.location ?? undefined,
-                                seniority: j.seniority ?? undefined,
-                                employmentType: j.employment_type ?? undefined,
-                                extractedData: {},
-                                jobSlug: j.job_slug ?? undefined,
-                                publishedAt: j.published_at ?? undefined,
-                                createdAt: j.created_at ?? new Date().toISOString(),
-                                updatedAt: j.updated_at ?? new Date().toISOString(),
-                              })) as Job[]
-                            );
+                          try {
+                            await refreshLiveDashboard();
+                          } catch {
+                            // ignore
                           }
                           return;
                         }
@@ -221,27 +216,10 @@ export default function DashboardPage() {
                               body: JSON.stringify({ publish: true }),
                             })
                           );
-                          const res = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
-                          if (res.ok) {
-                            const json = (await res.json()) as LiveDashboardResponse;
-                            setCompany(json.company);
-                            setJobs(
-                              (json.jobs ?? []).map((j) => ({
-                                id: j.id,
-                                companyId: json.company?.id ?? "company",
-                                status: j.status,
-                                rawIntent: "",
-                                title: j.title ?? undefined,
-                                location: j.location ?? undefined,
-                                seniority: j.seniority ?? undefined,
-                                employmentType: j.employment_type ?? undefined,
-                                extractedData: {},
-                                jobSlug: j.job_slug ?? undefined,
-                                publishedAt: j.published_at ?? undefined,
-                                createdAt: j.created_at ?? new Date().toISOString(),
-                                updatedAt: j.updated_at ?? new Date().toISOString(),
-                              })) as Job[]
-                            );
+                          try {
+                            await refreshLiveDashboard();
+                          } catch {
+                            // ignore
                           }
                           return;
                         }
@@ -332,28 +310,11 @@ export default function DashboardPage() {
                               alert(json.error ?? "Verwijderen mislukt.");
                               return;
                             }
-                            const res2 = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
-                            if (res2.ok) {
-                              const json2 = (await res2.json()) as LiveDashboardResponse;
-                              setCompany(json2.company);
-                              setJobs(
-                                (json2.jobs ?? []).map((j) => ({
-                                  id: j.id,
-                                  companyId: json2.company?.id ?? "company",
-                                  status: j.status,
-                                  rawIntent: "",
-                                  title: j.title ?? undefined,
-                                  location: j.location ?? undefined,
-                                  seniority: j.seniority ?? undefined,
-                                  employmentType: j.employment_type ?? undefined,
-                                  extractedData: {},
-                                  jobSlug: j.job_slug ?? undefined,
-                                  publishedAt: j.published_at ?? undefined,
-                                  createdAt: j.created_at ?? new Date().toISOString(),
-                                  updatedAt: j.updated_at ?? new Date().toISOString(),
-                                })) as Job[]
-                              );
-                            }
+                          try {
+                            await refreshLiveDashboard();
+                          } catch {
+                            // ignore
+                          }
                             return;
                           }
                           deleteJob(job.id);
@@ -376,28 +337,11 @@ export default function DashboardPage() {
                                 body: JSON.stringify({ publish: true }),
                               })
                             );
-                            const res = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
-                            if (res.ok) {
-                              const json = (await res.json()) as LiveDashboardResponse;
-                              setCompany(json.company);
-                              setJobs(
-                                (json.jobs ?? []).map((j) => ({
-                                  id: j.id,
-                                  companyId: json.company?.id ?? "company",
-                                  status: j.status,
-                                  rawIntent: "",
-                                  title: j.title ?? undefined,
-                                  location: j.location ?? undefined,
-                                  seniority: j.seniority ?? undefined,
-                                  employmentType: j.employment_type ?? undefined,
-                                  extractedData: {},
-                                  jobSlug: j.job_slug ?? undefined,
-                                  publishedAt: j.published_at ?? undefined,
-                                  createdAt: j.created_at ?? new Date().toISOString(),
-                                  updatedAt: j.updated_at ?? new Date().toISOString(),
-                                })) as Job[]
-                              );
-                            }
+                          try {
+                            await refreshLiveDashboard();
+                          } catch {
+                            // ignore
+                          }
                             return;
                           }
 

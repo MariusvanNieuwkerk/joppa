@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/cn";
 import { getSupabaseClient } from "@/lib/supabase";
+import { useAuthRole } from "@/hooks/use-auth-role";
 
 type NavItem =
   | { kind: "link"; href: string; label: string }
@@ -18,61 +18,7 @@ export function HeaderNav() {
   const supabase = useMemo(() => getSupabaseClient(), []);
   const [openPath, setOpenPath] = useState<string | null>(null);
   const open = openPath === pathname;
-
-  const [authState, setAuthState] = useState<
-    | { status: "loading" }
-    | { status: "logged_out" }
-    | { status: "logged_in"; role: "employer" | "candidate" | "unknown" }
-  >({ status: "loading" });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function refreshFromSession(session: Session | null | undefined) {
-      try {
-        const token = session?.access_token;
-        if (!token) {
-          if (!cancelled) setAuthState({ status: "logged_out" });
-          return;
-        }
-        const res = await fetch("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = (await res.json().catch(() => ({}))) as { role?: string | null };
-        const role =
-          res.ok && json.role === "employer"
-            ? "employer"
-            : res.ok && json.role === "candidate"
-              ? "candidate"
-              : "unknown";
-        if (!cancelled) setAuthState({ status: "logged_in", role });
-      } catch {
-        if (!cancelled) setAuthState({ status: "logged_out" });
-      }
-    }
-
-    (async () => {
-      try {
-        if (!supabase) {
-          if (!cancelled) setAuthState({ status: "logged_out" });
-          return;
-        }
-        const { data } = await supabase.auth.getSession();
-        await refreshFromSession(data.session);
-      } catch {
-        if (!cancelled) setAuthState({ status: "logged_out" });
-      }
-    })();
-
-    const sub = supabase?.auth.onAuthStateChange((_event, session) => {
-      void refreshFromSession(session);
-    });
-
-    return () => {
-      cancelled = true;
-      sub?.data.subscription.unsubscribe();
-    };
-  }, [supabase]);
+  const authState = useAuthRole();
 
   const items: NavItem[] = useMemo(() => {
     // Public / logged-out navigation
@@ -109,7 +55,6 @@ export function HeaderNav() {
     try {
       await supabase?.auth.signOut();
     } finally {
-      setAuthState({ status: "logged_out" });
       setOpenPath(null);
       router.push("/login");
       router.refresh();
