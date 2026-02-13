@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireEmployer } from "@/lib/auth-guard";
-import { getDbOrThrow } from "@/lib/supabase-db";
+import { getDbOrThrow, getOrCreateDefaultCompany } from "@/lib/supabase-db";
 
 export const runtime = "nodejs";
 
@@ -20,7 +20,7 @@ export async function GET(
   const { data: job, error: jobErr } = await db
     .from("jobs")
     .select(
-      "id,company_id,status,raw_intent,title,location,seniority,employment_type,job_slug,published_at,company_slug_snapshot,brand_snapshot_public,created_at,updated_at"
+      "id,company_id,status,raw_intent,title,location,seniority,employment_type,job_slug,published_at,company_slug_snapshot,brand_snapshot_public,extracted_data,created_at,updated_at"
     )
     .eq("id", id)
     .single();
@@ -54,5 +54,45 @@ export async function GET(
     { company: company ?? null, job, contentsLatest: latestByChannel, runs: runs ?? [] },
     { headers: { "Cache-Control": "no-store" } }
   );
+}
+
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<Record<string, string>> }
+) {
+  const guard = await requireEmployer(req);
+  if (!guard.ok) return NextResponse.json({ error: guard.message }, { status: guard.status });
+
+  const id = (await context.params).id;
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const db = getDbOrThrow();
+  const company = await getOrCreateDefaultCompany();
+
+  const { data: job, error: jobErr } = await db
+    .from("jobs")
+    .select("id,company_id,status")
+    .eq("id", id)
+    .single();
+
+  if (jobErr || !job) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (job.company_id !== company.id) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+  if (job.status === "published") {
+    return NextResponse.json(
+      { error: "Live vacatures kun je (nu) niet verwijderen. Zet eerst op archived." },
+      { status: 400 }
+    );
+  }
+
+  // Delete children first (no cascade assumptions)
+  await db.from("job_contents").delete().eq("job_id", id);
+  await db.from("generation_runs").delete().eq("job_id", id);
+
+  const { error: delErr } = await db.from("jobs").delete().eq("id", id);
+  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
 }
 

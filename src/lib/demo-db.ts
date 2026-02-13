@@ -99,6 +99,16 @@ export function listJobs() {
   return db.jobs;
 }
 
+export function deleteJob(jobId: string) {
+  const db = loadDemoDb();
+  const before = db.jobs.length;
+  db.jobs = db.jobs.filter((j) => j.id !== jobId);
+  db.contents = (db.contents ?? []).filter((c) => c.jobId !== jobId);
+  db.runs = (db.runs ?? []).filter((r) => r.jobId !== jobId);
+  saveDemoDb(db);
+  return db.jobs.length !== before;
+}
+
 export function createRun(input: Omit<GenerationRun, "id" | "createdAt" | "updatedAt">) {
   const db = loadDemoDb();
   const run: GenerationRun = {

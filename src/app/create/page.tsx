@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { RequireEmployer } from "@/components/require-employer";
@@ -142,13 +142,19 @@ function buildRawIntent(companyName: string | null, state: WizardState) {
 
 export default function CreateJobPage() {
   const router = useRouter();
+  const sp = useSearchParams();
+  const editId = (sp.get("id") ?? "").trim();
+  const isEditing = Boolean(editId);
 
   const demoCompany = useMemo(() => getCompany(), []);
   const [mode, setMode] = useState<"live" | "demo">("live");
   const [liveCompany, setLiveCompany] = useState<LiveCompany | null>(null);
   const companyName = mode === "live" ? liveCompany?.name ?? null : demoCompany?.name ?? null;
 
-  const storageKey = "joppa.create.wizard.v1";
+  const storageKey = useMemo(
+    () => `joppa.create.wizard.v1:${isEditing ? editId : "new"}`,
+    [editId, isEditing]
+  );
   const [stepIdx, setStepIdx] = useState(0);
   const [state, setState] = useState<WizardState>(() => ({
     title: "",
@@ -208,7 +214,7 @@ export default function CreateJobPage() {
     } catch {
       // ignore
     }
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     try {
@@ -216,7 +222,52 @@ export default function CreateJobPage() {
     } catch {
       // ignore
     }
-  }, [state]);
+  }, [state, storageKey]);
+
+  // If editing: prefill from existing campaign (structured input if present)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!isEditing) return;
+      try {
+        const res = await fetch(`/api/campaigns/${editId}`, await withAuth({ method: "GET" }));
+        const json = (await res.json().catch(() => ({}))) as {
+          job?: {
+            id: string;
+            title: string | null;
+            location: string | null;
+            seniority: string | null;
+            employment_type: string | null;
+            raw_intent?: string | null;
+            extracted_data?: unknown;
+          };
+        };
+        if (!res.ok) throw new Error("not ok");
+        if (cancelled) return;
+
+        const job = json.job;
+        const basePatch: Partial<WizardState> = {
+          title: job?.title ?? "",
+          location: job?.location ?? "",
+          seniority: job?.seniority ?? "Medior",
+          employmentType: job?.employment_type ?? "Vast",
+        };
+        const input = (job?.extracted_data as { input_v1?: unknown } | null)?.input_v1;
+        const inputObj = input && typeof input === "object" ? (input as Partial<WizardState>) : null;
+        setState((prev) => ({
+          ...prev,
+          ...basePatch,
+          ...(inputObj ?? {}),
+        }));
+        setStepIdx(0);
+      } catch {
+        // ignore (keep draft)
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, isEditing]);
 
   const brandOk = mode === "demo" ? Boolean(demoCompany?.brandTone) : isBrandComplete(liveCompany);
 
@@ -674,32 +725,41 @@ export default function CreateJobPage() {
                         try {
                           const rawIntent = buildRawIntent(companyName, state);
 
-                          // Try live (Supabase + Gemini) first
-                          const res = await fetch(
-                            "/api/campaigns/generate",
-                            await withAuth({
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ rawIntent, structured: state }),
-                            })
-                          );
-                          if (res.ok) {
-                            const json = (await res.json()) as { jobId?: string; error?: string };
-                            if (json.jobId) {
+                          if (mode === "live") {
+                            const url = isEditing
+                              ? `/api/campaigns/${editId}/wizard`
+                              : "/api/campaigns/generate";
+                            const res = await fetch(
+                              url,
+                              await withAuth({
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ rawIntent, structured: state }),
+                              })
+                            );
+                            const json = (await res.json().catch(() => ({}))) as {
+                              jobId?: string;
+                              error?: string;
+                            };
+                            if (!res.ok) throw new Error(json.error ?? "Opslaan mislukt.");
+                            const jobId = json.jobId ?? (isEditing ? editId : undefined);
+                            if (jobId) {
                               try {
                                 localStorage.removeItem(storageKey);
                               } catch {
                                 // ignore
                               }
-                              router.push(`/campaigns/${json.jobId}`);
+                              router.push(`/campaigns/${jobId}`);
                               return;
                             }
                           }
 
                           // Fallback: demo/localStorage
-                          const job = createJob({ rawIntent });
+                          const jobId = isEditing ? editId : createJob({ rawIntent }).id;
+                          if (isEditing) updateJob(editId, { rawIntent });
+                          if (!jobId) throw new Error("Kon vacature niet opslaan.");
                           const runExtract = createRun({
-                            jobId: job.id,
+                            jobId,
                             step: "extract",
                             status: "running",
                             model: "demo",
@@ -707,9 +767,9 @@ export default function CreateJobPage() {
                           });
 
                           const generated = mockGenerateCampaign({ rawIntent, company: demoCompany ?? null });
-                          updateJob(job.id, generated.jobPatch);
+                          updateJob(jobId, generated.jobPatch);
                           createRun({
-                            jobId: job.id,
+                            jobId,
                             step: "extract",
                             status: "succeeded",
                             model: "demo",
@@ -717,7 +777,7 @@ export default function CreateJobPage() {
                           });
 
                           const runCopy = createRun({
-                            jobId: job.id,
+                            jobId,
                             step: "copy",
                             status: "running",
                             model: "demo",
@@ -726,7 +786,7 @@ export default function CreateJobPage() {
 
                           for (const c of generated.contents) {
                             upsertContent({
-                              jobId: job.id,
+                              jobId,
                               channel: c.channel,
                               version: 1,
                               state: "draft",
@@ -734,7 +794,7 @@ export default function CreateJobPage() {
                             });
                           }
                           createRun({
-                            jobId: job.id,
+                            jobId,
                             step: "copy",
                             status: "succeeded",
                             model: "demo",
@@ -742,7 +802,7 @@ export default function CreateJobPage() {
                           });
 
                           createRun({
-                            jobId: job.id,
+                            jobId,
                             step: "assets",
                             status: "succeeded",
                             model: "template",
@@ -754,7 +814,7 @@ export default function CreateJobPage() {
                           } catch {
                             // ignore
                           }
-                          router.push(`/campaigns/${job.id}`);
+                          router.push(`/campaigns/${jobId}`);
                         } catch (e) {
                           setError(e instanceof Error ? e.message : "Er ging iets mis.");
                         } finally {
@@ -763,7 +823,7 @@ export default function CreateJobPage() {
                       }}
                       className="inline-flex h-11 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                     >
-                      {loading ? "Even bezig…" : "Maak mijn vacature"}
+                      {loading ? "Even bezig…" : isEditing ? "Opslaan & (opnieuw) maken" : "Maak mijn vacature"}
                     </button>
                   </>
                 ) : null}

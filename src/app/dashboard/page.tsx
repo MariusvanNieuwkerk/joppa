@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { RequireEmployer } from "@/components/require-employer";
-import { getCompany, listJobs, updateJob } from "@/lib/demo-db";
+import { deleteJob, getCompany, listJobs, updateJob } from "@/lib/demo-db";
 import type { Company, Job } from "@/lib/types";
 import { withAuth } from "@/lib/auth-client";
 
@@ -156,11 +156,59 @@ export default function DashboardPage() {
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link
-                    href={`/campaigns/${job.id}`}
+                    href={`/create?id=${job.id}`}
                     className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
                   >
                     Bewerken
                   </Link>
+                  {job.status !== "published" ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!confirm("Weet je zeker dat je deze conceptvacature wilt verwijderen?"))
+                          return;
+                        if (mode === "live") {
+                          const res = await fetch(
+                            `/api/campaigns/${job.id}`,
+                            await withAuth({ method: "DELETE" })
+                          );
+                          const json = (await res.json().catch(() => ({}))) as { error?: string };
+                          if (!res.ok) {
+                            alert(json.error ?? "Verwijderen mislukt.");
+                            return;
+                          }
+                          const res2 = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
+                          if (res2.ok) {
+                            const json2 = (await res2.json()) as LiveDashboardResponse;
+                            setCompany(json2.company);
+                            setJobs(
+                              (json2.jobs ?? []).map((j) => ({
+                                id: j.id,
+                                companyId: json2.company?.id ?? "company",
+                                status: j.status,
+                                rawIntent: "",
+                                title: j.title ?? undefined,
+                                location: j.location ?? undefined,
+                                seniority: j.seniority ?? undefined,
+                                employmentType: j.employment_type ?? undefined,
+                                extractedData: {},
+                                jobSlug: j.job_slug ?? undefined,
+                                publishedAt: j.published_at ?? undefined,
+                                createdAt: j.created_at ?? new Date().toISOString(),
+                                updatedAt: j.updated_at ?? new Date().toISOString(),
+                              })) as Job[]
+                            );
+                          }
+                          return;
+                        }
+                        deleteJob(job.id);
+                        setJobs(listJobs());
+                      }}
+                      className="inline-flex h-10 items-center justify-center rounded-full border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-black dark:text-rose-300 dark:hover:bg-rose-950"
+                    >
+                      Verwijderen
+                    </button>
+                  ) : null}
                   {job.status !== "published" ? (
                     <button
                       onClick={async () => {
@@ -263,11 +311,59 @@ export default function DashboardPage() {
 
                   <div className="col-span-2 flex justify-end gap-2">
                     <Link
-                      href={`/campaigns/${job.id}`}
+                      href={`/create?id=${job.id}`}
                       className="inline-flex h-9 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
                     >
                       Bewerken
                     </Link>
+                    {job.status !== "published" ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm("Weet je zeker dat je deze conceptvacature wilt verwijderen?"))
+                            return;
+                          if (mode === "live") {
+                            const res = await fetch(
+                              `/api/campaigns/${job.id}`,
+                              await withAuth({ method: "DELETE" })
+                            );
+                            const json = (await res.json().catch(() => ({}))) as { error?: string };
+                            if (!res.ok) {
+                              alert(json.error ?? "Verwijderen mislukt.");
+                              return;
+                            }
+                            const res2 = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
+                            if (res2.ok) {
+                              const json2 = (await res2.json()) as LiveDashboardResponse;
+                              setCompany(json2.company);
+                              setJobs(
+                                (json2.jobs ?? []).map((j) => ({
+                                  id: j.id,
+                                  companyId: json2.company?.id ?? "company",
+                                  status: j.status,
+                                  rawIntent: "",
+                                  title: j.title ?? undefined,
+                                  location: j.location ?? undefined,
+                                  seniority: j.seniority ?? undefined,
+                                  employmentType: j.employment_type ?? undefined,
+                                  extractedData: {},
+                                  jobSlug: j.job_slug ?? undefined,
+                                  publishedAt: j.published_at ?? undefined,
+                                  createdAt: j.created_at ?? new Date().toISOString(),
+                                  updatedAt: j.updated_at ?? new Date().toISOString(),
+                                })) as Job[]
+                              );
+                            }
+                            return;
+                          }
+                          deleteJob(job.id);
+                          setJobs(listJobs());
+                        }}
+                        className="inline-flex h-9 items-center justify-center rounded-full border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900 dark:bg-black dark:text-rose-300 dark:hover:bg-rose-950"
+                      >
+                        Verwijderen
+                      </button>
+                    ) : null}
                     {job.status !== "published" ? (
                       <button
                         onClick={async () => {
