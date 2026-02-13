@@ -1,8 +1,29 @@
 "use client";
 
-import { useMemo } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import { getCompany, listJobs, getLatestContent } from "@/lib/demo-db";
+import type { Company, Job, JobContent } from "@/lib/types";
+
+type PublicJob = {
+  id: string;
+  status: "published";
+  title: string | null;
+  location: string | null;
+  seniority: string | null;
+  employment_type: string | null;
+  job_slug: string;
+  brand_snapshot_public: { name?: string | null; website?: string | null } | null;
+};
+
+type WebsiteContentRow = {
+  content?: { body?: string | null };
+};
+
+type PublicJobResponse = { job: PublicJob; websiteContent: WebsiteContentRow | null };
+
+type PublicCompanySnapshot = Pick<Company, "slug" | "name" | "website">;
 
 export function PublicJobClient({
   companySlug,
@@ -11,8 +32,8 @@ export function PublicJobClient({
   companySlug: string;
   jobSlug: string;
 }) {
-  const company = useMemo(() => getCompany(), []);
-  const job = useMemo(() => {
+  const demoCompany = useMemo(() => getCompany(), []);
+  const demoJob = useMemo(() => {
     const jobs = listJobs();
     return (
       jobs.find((j) => j.jobSlug === jobSlug) ??
@@ -20,18 +41,49 @@ export function PublicJobClient({
     );
   }, [jobSlug]);
 
-  const website = useMemo(() => {
-    if (!job) return null;
-    return getLatestContent(job.id, "website");
-  }, [job]);
+  const [mode, setMode] = useState<"live" | "demo">("live");
+  const [job, setJob] = useState<PublicJob | Job | null>(null);
+  const [company, setCompany] = useState<PublicCompanySnapshot | Company | null>(null);
+  const [websiteContent, setWebsiteContent] = useState<WebsiteContentRow | JobContent | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/public/job/${companySlug}/${jobSlug}`);
+        if (!res.ok) throw new Error("not ok");
+        const json = (await res.json()) as PublicJobResponse;
+        if (cancelled) return;
+        setMode("live");
+        setJob(json.job);
+        setWebsiteContent(json.websiteContent);
+        const snap = json.job?.brand_snapshot_public ?? {};
+        setCompany({
+          slug: companySlug,
+          name: snap?.name ?? "Bedrijf",
+          website: snap?.website ?? undefined,
+        });
+      } catch {
+        if (cancelled) return;
+        setMode("demo");
+        setCompany(demoCompany);
+        setJob(demoJob ?? null);
+        setWebsiteContent(demoJob ? getLatestContent(demoJob.id, "website") : null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [companySlug, jobSlug, demoCompany, demoJob]);
 
   if (!job || !company || company.slug !== companySlug) {
     return (
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h1 className="text-xl font-semibold">Job page not found</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-          In demo-mode komen public pages uit je lokale browser data. Maak eerst
-          een job via <b>/create</b>.
+          {mode === "demo"
+            ? "In demo-mode komen public pages uit je lokale browser data. Maak eerst een job via /create."
+            : "Deze vacature is (nog) niet live."}
         </p>
       </div>
     );
@@ -64,10 +116,16 @@ export function PublicJobClient({
             href="#apply"
             className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
-            Apply
+            Solliciteer
           </a>
+          <Link
+            href={`/bedrijven/${company.slug}`}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
+          >
+            Meer vacatures van {company.name}
+          </Link>
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
-            Public snapshot concept in v1 (demo-mode).
+            {mode === "live" ? "Live vacature" : "Demo-mode"}
           </div>
         </div>
       </header>
@@ -75,7 +133,7 @@ export function PublicJobClient({
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <div className="prose prose-zinc max-w-none text-sm leading-6 dark:prose-invert">
           <pre className="whitespace-pre-wrap font-sans">
-            {(website?.content?.body as string) ??
+            {(websiteContent?.content?.body as string) ??
               "No website copy yet. Go back to the cockpit and generate copy."}
           </pre>
         </div>

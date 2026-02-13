@@ -4,6 +4,16 @@ import { useState } from "react";
 
 import { getCompany, getJob, getLatestContent } from "@/lib/demo-db";
 import { channels, makeSafeFilename } from "@/lib/export-pack";
+import { withAuth } from "@/lib/auth-client";
+
+type LiveCampaignForExport = {
+  company: { name: string } | null;
+  job: { title: string | null } | null;
+  contentsLatest: Record<
+    string,
+    { content?: { headline?: string | null; body?: string | null } }
+  >;
+};
 
 async function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
@@ -34,8 +44,28 @@ export function DownloadExportPackButton({
           const JSZip = (await import("jszip")).default;
           const zip = new JSZip();
 
-          const job = getJob(jobId);
-          const company = getCompany();
+          // Prefer live data from Supabase (fallback to demo)
+          let live: null | {
+            company: LiveCampaignForExport["company"];
+            job: LiveCampaignForExport["job"];
+            contentsLatest: LiveCampaignForExport["contentsLatest"];
+          } = null;
+          try {
+            const res = await fetch(`/api/campaigns/${jobId}`, await withAuth({ method: "GET" }));
+            if (res.ok) {
+              const json = (await res.json()) as LiveCampaignForExport;
+              live = {
+                company: json.company,
+                job: json.job,
+                contentsLatest: json.contentsLatest ?? {},
+              };
+            }
+          } catch {
+            // ignore
+          }
+
+          const job = live?.job ?? getJob(jobId);
+          const company = live?.company ?? getCompany();
           const title = job?.title ?? "vacature";
           const base = makeSafeFilename(`${company?.name ?? "bedrijf"}-${title}`);
 
@@ -55,7 +85,8 @@ export function DownloadExportPackButton({
           // Texts
           const texts = zip.folder("teksten");
           for (const c of channels) {
-            const content = getLatestContent(jobId, c.id);
+            const content =
+              live?.contentsLatest?.[c.id] ?? getLatestContent(jobId, c.id);
             const body = (content?.content?.body as string) ?? "";
             const headline = (content?.content?.headline as string) ?? title;
             const text = [headline, "", body].filter(Boolean).join("\n");

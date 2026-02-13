@@ -4,16 +4,20 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { RequireEmployer } from "@/components/require-employer";
 import { createJob, createRun, getCompany, upsertContent, updateJob } from "@/lib/demo-db";
 import { mockGenerateCampaign } from "@/lib/mock-generate";
+import { withAuth } from "@/lib/auth-client";
 
 export default function CreateJobPage() {
   const router = useRouter();
   const company = useMemo(() => getCompany(), []);
   const [rawIntent, setRawIntent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
+    <RequireEmployer>
     <div className="grid gap-10 md:grid-cols-12 md:items-start">
       <div className="md:col-span-8">
         <h1 className="text-3xl font-semibold tracking-tight">Vacature maken</h1>
@@ -56,7 +60,26 @@ export default function CreateJobPage() {
               disabled={loading || rawIntent.trim().length < 20}
               onClick={async () => {
                 setLoading(true);
+                setError(null);
                 try {
+                  // Try live (Supabase + Gemini) first
+                  const res = await fetch(
+                    "/api/campaigns/generate",
+                    await withAuth({
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ rawIntent }),
+                    })
+                  );
+                  if (res.ok) {
+                    const json = (await res.json()) as { jobId?: string };
+                    if (json.jobId) {
+                      router.push(`/campaigns/${json.jobId}`);
+                      return;
+                    }
+                  }
+
+                  // Fallback: demo/localStorage
                   const job = createJob({ rawIntent });
 
                   // Runs: extract + copy + assets (demo)
@@ -112,6 +135,9 @@ export default function CreateJobPage() {
                   });
 
                   router.push(`/campaigns/${job.id}`);
+                } catch (e) {
+                  const msg = e instanceof Error ? e.message : "Er ging iets mis.";
+                  setError(msg);
                 } finally {
                   setLoading(false);
                 }
@@ -121,6 +147,12 @@ export default function CreateJobPage() {
               {loading ? "Even bezig…" : "Maak mijn vacature"}
             </button>
           </div>
+
+          {error ? (
+            <div className="mt-3 rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 text-xs text-amber-900/90 dark:border-zinc-800 dark:bg-black dark:text-zinc-200">
+              {error}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -140,6 +172,7 @@ export default function CreateJobPage() {
         </div>
       </div>
     </div>
+    </RequireEmployer>
   );
 }
 

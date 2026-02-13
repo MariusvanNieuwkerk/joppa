@@ -1,10 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { listJobs, updateJob } from "@/lib/demo-db";
-import type { Job } from "@/lib/types";
+import { RequireEmployer } from "@/components/require-employer";
+import { getCompany, listJobs, updateJob } from "@/lib/demo-db";
+import type { Company, Job } from "@/lib/types";
+import { withAuth } from "@/lib/auth-client";
+
+type LiveCompany = {
+  id: string;
+  name: string;
+  slug: string;
+  website: string | null;
+  brand_primary_color: string | null;
+  brand_tone: string | null;
+  brand_pitch: string | null;
+  created_at: string;
+};
+
+type LiveJobRow = {
+  id: string;
+  status: "draft" | "published" | "archived";
+  title: string | null;
+  location: string | null;
+  seniority: string | null;
+  employment_type: string | null;
+  job_slug: string;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type LiveDashboardResponse = { company: LiveCompany; jobs: LiveJobRow[] };
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -18,7 +46,48 @@ function formatDate(iso: string) {
 }
 
 export default function DashboardPage() {
+  const [mode, setMode] = useState<"live" | "demo">("live");
   const [jobs, setJobs] = useState<Job[]>(() => listJobs());
+  const [company, setCompany] = useState<Company | LiveCompany | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
+        if (!res.ok) throw new Error("not ok");
+        const json = (await res.json()) as LiveDashboardResponse;
+        if (cancelled) return;
+        setMode("live");
+        setCompany(json.company);
+        setJobs(
+          (json.jobs ?? []).map((j) => ({
+            id: j.id,
+            companyId: json.company?.id ?? "company",
+            status: j.status,
+            rawIntent: "",
+            title: j.title ?? undefined,
+            location: j.location ?? undefined,
+            seniority: j.seniority ?? undefined,
+            employmentType: j.employment_type ?? undefined,
+            extractedData: {},
+            jobSlug: j.job_slug ?? undefined,
+            publishedAt: j.published_at ?? undefined,
+            createdAt: j.created_at ?? new Date().toISOString(),
+            updatedAt: j.updated_at ?? new Date().toISOString(),
+          })) as Job[]
+        );
+      } catch {
+        if (cancelled) return;
+        setMode("demo");
+        setCompany(getCompany());
+        setJobs(listJobs());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const publishedCount = useMemo(
     () => jobs.filter((j) => j.status === "published").length,
@@ -26,6 +95,7 @@ export default function DashboardPage() {
   );
 
   return (
+    <RequireEmployer>
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
@@ -33,14 +103,6 @@ export default function DashboardPage() {
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
             {jobs.length} totaal · {publishedCount} live
           </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Link
-            href="/create"
-            className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
-            Nieuwe vacature
-          </Link>
         </div>
       </div>
 
@@ -56,7 +118,7 @@ export default function DashboardPage() {
           <div className="mt-4">
             <Link
               href="/create"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
             >
               Vacature maken
             </Link>
@@ -101,7 +163,41 @@ export default function DashboardPage() {
                   </Link>
                   {job.status !== "published" ? (
                     <button
-                      onClick={() => {
+                      onClick={async () => {
+                        if (mode === "live") {
+                          await fetch(
+                            `/api/campaigns/${job.id}/publish`,
+                            await withAuth({
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ publish: true }),
+                            })
+                          );
+                          const res = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
+                          if (res.ok) {
+                            const json = (await res.json()) as LiveDashboardResponse;
+                            setCompany(json.company);
+                            setJobs(
+                              (json.jobs ?? []).map((j) => ({
+                                id: j.id,
+                                companyId: json.company?.id ?? "company",
+                                status: j.status,
+                                rawIntent: "",
+                                title: j.title ?? undefined,
+                                location: j.location ?? undefined,
+                                seniority: j.seniority ?? undefined,
+                                employmentType: j.employment_type ?? undefined,
+                                extractedData: {},
+                                jobSlug: j.job_slug ?? undefined,
+                                publishedAt: j.published_at ?? undefined,
+                                createdAt: j.created_at ?? new Date().toISOString(),
+                                updatedAt: j.updated_at ?? new Date().toISOString(),
+                              })) as Job[]
+                            );
+                          }
+                          return;
+                        }
+
                         updateJob(job.id, {
                           status: "published",
                           publishedAt: new Date().toISOString(),
@@ -114,7 +210,7 @@ export default function DashboardPage() {
                     </button>
                   ) : (
                     <Link
-                      href={`/jobs/${"my-company"}/${job.jobSlug}`}
+                      href={`/jobs/${company?.slug ?? "bedrijf"}/${job.jobSlug}`}
                       className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-zinc-950 px-3 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                     >
                       Bekijken
@@ -174,7 +270,41 @@ export default function DashboardPage() {
                     </Link>
                     {job.status !== "published" ? (
                       <button
-                        onClick={() => {
+                        onClick={async () => {
+                          if (mode === "live") {
+                            await fetch(
+                              `/api/campaigns/${job.id}/publish`,
+                              await withAuth({
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ publish: true }),
+                              })
+                            );
+                            const res = await fetch("/api/dashboard", await withAuth({ method: "GET" }));
+                            if (res.ok) {
+                              const json = (await res.json()) as LiveDashboardResponse;
+                              setCompany(json.company);
+                              setJobs(
+                                (json.jobs ?? []).map((j) => ({
+                                  id: j.id,
+                                  companyId: json.company?.id ?? "company",
+                                  status: j.status,
+                                  rawIntent: "",
+                                  title: j.title ?? undefined,
+                                  location: j.location ?? undefined,
+                                  seniority: j.seniority ?? undefined,
+                                  employmentType: j.employment_type ?? undefined,
+                                  extractedData: {},
+                                  jobSlug: j.job_slug ?? undefined,
+                                  publishedAt: j.published_at ?? undefined,
+                                  createdAt: j.created_at ?? new Date().toISOString(),
+                                  updatedAt: j.updated_at ?? new Date().toISOString(),
+                                })) as Job[]
+                              );
+                            }
+                            return;
+                          }
+
                           updateJob(job.id, {
                             status: "published",
                             publishedAt: new Date().toISOString(),
@@ -187,7 +317,7 @@ export default function DashboardPage() {
                       </button>
                     ) : (
                       <Link
-                        href={`/jobs/${"my-company"}/${job.jobSlug}`}
+                        href={`/jobs/${company?.slug ?? "bedrijf"}/${job.jobSlug}`}
                         className="inline-flex h-9 items-center justify-center rounded-full bg-zinc-950 px-3 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                       >
                         Bekijken
@@ -211,6 +341,7 @@ export default function DashboardPage() {
         </p>
       </div>
     </div>
+    </RequireEmployer>
   );
 }
 

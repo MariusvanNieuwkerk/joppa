@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -10,22 +10,21 @@ type NavItem = { href: string; label: string };
 
 export function HeaderNav() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const open = openPath === pathname;
 
   const items: NavItem[] = useMemo(
     () => [
+      { href: "/vacatures", label: "Vacatures" },
       { href: "/dashboard", label: "Mijn vacatures" },
       { href: "/create", label: "Vacature maken" },
       { href: "/onboarding", label: "Bedrijfsstijl" },
+      { href: "/instellingen", label: "Instellingen" },
+      { href: "/login", label: "Inloggen" },
       { href: "/pricing", label: "Pricing" },
     ],
     []
   );
-
-  useEffect(() => {
-    // Close menu when navigating.
-    setOpen(false);
-  }, [pathname]);
 
   return (
     <>
@@ -52,7 +51,7 @@ export function HeaderNav() {
         aria-haspopup="dialog"
         aria-controls="joppa-mobile-menu"
         aria-expanded={open}
-        onClick={() => setOpen(true)}
+        onClick={() => setOpenPath(pathname)}
       >
         <span className="sr-only">Menu</span>
         <HamburgerIcon />
@@ -70,7 +69,7 @@ export function HeaderNav() {
           <button
             type="button"
             className="absolute inset-0 bg-black/30 backdrop-blur-[1px]"
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenPath(null)}
             aria-label="Sluit menu"
           />
 
@@ -80,7 +79,7 @@ export function HeaderNav() {
                 <div className="text-sm font-semibold">Navigatie</div>
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={() => setOpenPath(null)}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
                   aria-label="Sluit menu"
                 >

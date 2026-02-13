@@ -111,6 +111,19 @@ Optioneel: AI (later) alleen voor **achtergronden**, met **preview → kiezen �
 ### 4) Bedrijfsstijl vanaf dag 1
 Bedrijven kunnen een **bedrijfsstijl** instellen (logo/kleur/schrijfstijl), zodat alles herkenbaar blijft.
 
+### 5) Website‑stijl ophalen (later, optioneel)
+Als iemand een website invult, kan Joppa (op verzoek) een voorstel doen voor de stijl.
+
+**Wat we kunnen ophalen (voorstel):**
+- logo (als het te vinden is)
+- 1–2 hoofdkleuren
+- korte “over ons” indruk (1–2 zinnen) als schrijf‑hulp
+
+**Belangrijk (kwaliteit + kosten):**
+- altijd **preview + bevestigen** (“Gebruik dit” / “Pas aan”)
+- alleen uitvoeren na een **klik** (“Haal stijl op”), dus geen kosten op de achtergrond
+- later kan dit met **Gemini** (API key), maar de gebruiker houdt altijd controle
+
 ## UX workflow (v1/v1.5)
 
 ### 1) Bedrijfsstijl (optioneel)
@@ -147,6 +160,7 @@ Een overzichtelijke plek om:
 - Vacature maken: `/create`
 - Mijn vacatures: `/dashboard`
 - Cockpit: `/campaigns/[id]`
+- Bedrijfspagina: `/bedrijven/[companySlug]`
 - Public vacature: `/jobs/[companySlug]/[jobSlug]`
 - Indeed feed: `/api/indeed/feed.xml` (Supabase‑ready, met fallback)
 - Downloadpakket: in cockpit tab “Publish/Export” (download zip)

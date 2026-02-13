@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Container } from "@/components/container";
+import { HeaderCta } from "@/components/header-cta";
 import { HeaderNav } from "@/components/header-nav";
 import { ScrollToTop } from "@/components/scroll-to-top";
 
@@ -20,12 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/create"
-              className="inline-flex h-9 items-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              Nieuwe vacature
-            </Link>
+            <HeaderCta />
           </div>
         </Container>
       </header>
@@ -44,6 +40,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             — mooie vacatures, zonder gedoe
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <Link
+              href="/vacatures"
+              className="hover:text-zinc-950 dark:hover:text-white"
+            >
+              Vacatures
+            </Link>
             <Link
               href="/dashboard"
               className="hover:text-zinc-950 dark:hover:text-white"

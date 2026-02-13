@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { RequireEmployer } from "@/components/require-employer";
 import {
   getCompany,
   getJob,
@@ -12,9 +13,70 @@ import {
   updateJob,
   upsertContent,
 } from "@/lib/demo-db";
-import type { Channel, JobContent } from "@/lib/types";
+import type { Channel, Company, GenerationRun, Job, JobContent } from "@/lib/types";
 import { Tabs } from "@/components/tabs";
 import { DownloadExportPackButton } from "@/components/download-export-pack-button";
+import { withAuth } from "@/lib/auth-client";
+
+type LiveCompany = {
+  id: string;
+  name: string;
+  slug: string;
+  website: string | null;
+  brand_primary_color: string | null;
+  brand_tone: string | null;
+  brand_pitch: string | null;
+  created_at: string;
+};
+
+type LiveJob = {
+  id: string;
+  company_id: string;
+  status: "draft" | "published" | "archived";
+  raw_intent: string;
+  title: string | null;
+  location: string | null;
+  seniority: string | null;
+  employment_type: string | null;
+  job_slug: string;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type LiveContentRow = {
+  id: string;
+  job_id: string;
+  channel: Channel;
+  version: number;
+  state: string;
+  content: { headline?: string | null; body?: string | null };
+  created_at: string;
+};
+
+type LiveRun = {
+  id: string;
+  job_id: string;
+  step: string;
+  status: string;
+  model: string | null;
+  prompt: string | null;
+  error: string | null;
+  cost_usd: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type LiveCampaignResponse = {
+  company: LiveCompany | null;
+  job: LiveJob;
+  contentsLatest: Partial<Record<Channel, LiveContentRow>>;
+  runs: LiveRun[];
+};
+
+type AnyCompany = Company | LiveCompany;
+type AnyJob = Job | LiveJob;
+type AnyRun = GenerationRun | LiveRun;
 
 const tabItems = [
   { id: "overview", label: "Overview" },
@@ -42,19 +104,71 @@ export default function JobCockpitPage({
   const sp = useSearchParams();
   const tab = sp.get("tab") ?? "overview";
 
-  const company = useMemo(() => getCompany(), []);
-  const job = useMemo(() => getJob(params.id), [params.id]);
+  const demoCompany = useMemo(() => getCompany(), []);
+  const demoJob = useMemo(() => getJob(params.id), [params.id]);
 
-  const [title, setTitle] = useState(job?.title ?? "");
-  const [location, setLocation] = useState(job?.location ?? "");
-  const [seniority, setSeniority] = useState(job?.seniority ?? "");
+  const [mode, setMode] = useState<"live" | "demo">("live");
+  const [company, setCompany] = useState<AnyCompany | null>(null);
+  const [job, setJobState] = useState<AnyJob | null>(null);
+  const [contentsLatest, setContentsLatest] = useState<
+    Partial<Record<Channel, LiveContentRow>>
+  >({});
+  const [runs, setRuns] = useState<LiveRun[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/campaigns/${params.id}`,
+          await withAuth({ method: "GET" })
+        );
+        if (!res.ok) throw new Error("not ok");
+        const json = (await res.json()) as LiveCampaignResponse;
+        if (cancelled) return;
+        setMode("live");
+        setCompany(json.company);
+        setJobState(json.job);
+        setContentsLatest(json.contentsLatest ?? {});
+        setRuns(json.runs ?? []);
+      } catch {
+        if (cancelled) return;
+        setMode("demo");
+        setCompany(demoCompany);
+        setJobState(demoJob);
+        setContentsLatest({});
+        setRuns([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id, demoCompany, demoJob]);
+
+  const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
+  const [seniority, setSeniority] = useState("");
+
+  useEffect(() => {
+    setTitle(job?.title ?? "");
+    setLocation(job?.location ?? "");
+    setSeniority(job?.seniority ?? "");
+  }, [job?.title, job?.location, job?.seniority]);
 
   const [activeChannel, setActiveChannel] = useState<Channel>("website");
   const initial = useMemo(() => {
+    if (mode === "live") {
+      const c = contentsLatest?.website;
+      return (c?.content?.body as string) ?? "";
+    }
     const c = getLatestContent(params.id, "website");
     return (c?.content?.body as string) ?? "";
-  }, [params.id]);
+  }, [params.id, mode, contentsLatest]);
   const [copyBody, setCopyBody] = useState(initial);
+
+  useEffect(() => {
+    setCopyBody(initial);
+  }, [initial]);
 
   if (!job) {
     return (
@@ -71,10 +185,14 @@ export default function JobCockpitPage({
     );
   }
 
-  const companySlug = company?.slug ?? "my-company";
-  const jobSlug = job.jobSlug ?? "job";
+  const companySlug = company?.slug ?? "bedrijf";
+  const jobSlug =
+    mode === "live"
+      ? (job as LiveJob).job_slug
+      : (job as Job).jobSlug ?? "vacature";
 
   return (
+    <RequireEmployer>
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
@@ -124,7 +242,11 @@ export default function JobCockpitPage({
                 />
                 <ChecklistItem
                   title="Copy reviewed"
-                  ok={Boolean(getLatestContent(job.id, "website"))}
+                  ok={
+                    mode === "live"
+                      ? Boolean(contentsLatest?.website)
+                      : Boolean(getLatestContent(job.id, "website"))
+                  }
                   hint="Controleer kanaal-copy en pas aan."
                 />
                 <ChecklistItem
@@ -190,7 +312,30 @@ export default function JobCockpitPage({
             </div>
             <div className="flex items-end">
               <button
-                onClick={() => {
+                onClick={async () => {
+                  if (mode === "live") {
+                    const res = await fetch(
+                      `/api/campaigns/${job.id}/structure`,
+                      await withAuth({
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          title,
+                          location,
+                          seniority,
+                        }),
+                      })
+                    );
+                    if (res.ok) {
+                      const json = (await res.json()) as { job?: Partial<LiveJob> };
+                      if (json.job)
+                        setJobState(
+                          (prev) => ({ ...(prev as LiveJob), ...json.job }) as LiveJob
+                        );
+                    }
+                    return;
+                  }
+
                   updateJob(job.id, {
                     title: title || undefined,
                     location: location || undefined,
@@ -218,8 +363,13 @@ export default function JobCockpitPage({
                     key={c.id}
                     onClick={() => {
                       setActiveChannel(c.id);
-                      const latest = getLatestContent(job.id, c.id);
-                      setCopyBody((latest?.content?.body as string) ?? "");
+                      if (mode === "live") {
+                        const latest = contentsLatest?.[c.id];
+                        setCopyBody((latest?.content?.body as string) ?? "");
+                      } else {
+                        const latest = getLatestContent(job.id, c.id);
+                        setCopyBody((latest?.content?.body as string) ?? "");
+                      }
                     }}
                     className={`flex items-center justify-between rounded-xl border px-4 py-2 text-left text-sm ${
                       activeChannel === c.id
@@ -247,7 +397,31 @@ export default function JobCockpitPage({
                   </div>
                 </div>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    if (mode === "live") {
+                      const res = await fetch(
+                        `/api/campaigns/${job.id}/content`,
+                        await withAuth({
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            channel: activeChannel,
+                            body: copyBody,
+                          }),
+                        })
+                      );
+                      if (res.ok) {
+                        const json = (await res.json()) as { content?: LiveContentRow };
+                        if (json.content) {
+                          setContentsLatest((prev) => ({
+                            ...(prev ?? {}),
+                            [activeChannel]: json.content,
+                          }));
+                        }
+                      }
+                      return;
+                    }
+
                     const latest = getLatestContent(job.id, activeChannel);
                     const nextVersion = (latest?.version ?? 1) + 1;
                     upsertContent({
@@ -329,7 +503,26 @@ export default function JobCockpitPage({
               </p>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    if (mode === "live") {
+                      const res = await fetch(
+                        `/api/campaigns/${job.id}/publish`,
+                        await withAuth({
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ publish: true }),
+                        })
+                      );
+                      if (res.ok) {
+                        const json = (await res.json()) as { job?: Partial<LiveJob> };
+                        if (json.job)
+                          setJobState(
+                            (prev) => ({ ...(prev as LiveJob), ...json.job }) as LiveJob
+                          );
+                      }
+                      return;
+                    }
+
                     updateJob(job.id, {
                       status: "published",
                       publishedAt: new Date().toISOString(),
@@ -341,7 +534,26 @@ export default function JobCockpitPage({
                   Publish
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    if (mode === "live") {
+                      const res = await fetch(
+                        `/api/campaigns/${job.id}/publish`,
+                        await withAuth({
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ publish: false }),
+                        })
+                      );
+                      if (res.ok) {
+                        const json = (await res.json()) as { job?: Partial<LiveJob> };
+                        if (json.job)
+                          setJobState(
+                            (prev) => ({ ...(prev as LiveJob), ...json.job }) as LiveJob
+                          );
+                      }
+                      return;
+                    }
+
                     updateJob(job.id, { status: "draft", publishedAt: undefined });
                     window.location.reload();
                   }}
@@ -393,25 +605,27 @@ export default function JobCockpitPage({
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
               <div className="text-sm font-medium">Generation runs</div>
               <div className="mt-4 space-y-2 text-sm">
-                {listRuns(job.id).length ? (
-                  listRuns(job.id).map((r) => (
-                    <div
-                      key={r.id}
-                      className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-black"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium">{r.step}</div>
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {r.status}
+                {(mode === "live" ? runs : listRuns(job.id)).length ? (
+                  (mode === "live" ? (runs as AnyRun[]) : (listRuns(job.id) as AnyRun[])).map(
+                    (r) => (
+                      <div
+                        key={r.id}
+                        className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-black"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">{r.step}</div>
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {r.status}
+                          </div>
                         </div>
+                        {r.model ? (
+                          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            model: {r.model}
+                          </div>
+                        ) : null}
                       </div>
-                      {r.model ? (
-                        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                          model: {r.model}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))
+                    )
+                  )
                 ) : (
                   <div className="text-zinc-500 dark:text-zinc-400">
                     No runs yet.
@@ -432,6 +646,7 @@ export default function JobCockpitPage({
         </div>
       ) : null}
     </div>
+    </RequireEmployer>
   );
 }
 

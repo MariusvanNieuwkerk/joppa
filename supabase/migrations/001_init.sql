@@ -140,6 +140,18 @@ as $$
 $$;
 
 -- Policies
+-- Make this script safe to re-run (drop existing policies first)
+drop policy if exists "companies_select_member" on public.companies;
+drop policy if exists "companies_update_member" on public.companies;
+drop policy if exists "company_members_select_member" on public.company_members;
+drop policy if exists "jobs_select_member" on public.jobs;
+drop policy if exists "jobs_insert_member" on public.jobs;
+drop policy if exists "jobs_update_member" on public.jobs;
+drop policy if exists "jobs_delete_member" on public.jobs;
+drop policy if exists "job_contents_all_member" on public.job_contents;
+drop policy if exists "job_assets_all_member" on public.job_assets;
+drop policy if exists "generation_runs_all_member" on public.generation_runs;
+
 -- Companies: members can read; owners/admin/editors can update; creation via service/admin flows (v1 keep simple)
 create policy "companies_select_member"
 on public.companies
