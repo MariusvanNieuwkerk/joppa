@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="py-10">
       <div className="grid gap-12 md:grid-cols-12 md:items-center">
-        <div className="md:col-span-7">
+        <div className="md:col-span-12">
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white md:text-5xl">
             Maak in minuten een mooie, strakke vacature.
           </h1>
@@ -32,45 +32,6 @@ export default function Home() {
           <div className="mt-5 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
             Geen technische kennis nodig. Je ziet meteen resultaat, en je kunt
             alles rustig aanpassen.
-          </div>
-        </div>
-
-        <div className="md:col-span-5">
-          <div className="rounded-2xl border border-amber-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              Zo werkt het
-            </div>
-            <ol className="mt-3 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
-              <li className="flex gap-3">
-                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
-                  1
-                </span>
-                <span>Stel één keer je bedrijfsstijl in (tone, kleuren, branding)</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
-                  2
-                </span>
-                <span>Maak je vacature in de wizard (stap‑voor‑stap, in gewone taal)</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
-                  3
-                </span>
-                <span>Joppa maakt teksten per kanaal + visuals. Jij checkt en past aan</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
-                  4
-                </span>
-                <span>Keur social posts goed en deel of download. Indeed loopt automatisch</span>
-              </li>
-            </ol>
-
-            <div className="mt-5 rounded-xl border border-amber-200/80 bg-amber-50/60 p-4 text-xs text-amber-900/80 dark:border-zinc-800 dark:bg-black dark:text-zinc-300">
-              Je start met mooie standaard templates (gratis). Wil je een andere sfeer?
-              Kies een stijl of upload een eigen foto. (Later kun je ook optioneel AI‑beelden gebruiken.)
-            </div>
           </div>
         </div>
       </div>
