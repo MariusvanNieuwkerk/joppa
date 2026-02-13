@@ -65,10 +65,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Bedrijfsstijl
             </Link>
             <Link
-              href="/pricing"
+              href="/prijzen"
               className="hover:text-zinc-950 dark:hover:text-white"
             >
-              Pricing
+              Prijzen
             </Link>
           </div>
         </Container>

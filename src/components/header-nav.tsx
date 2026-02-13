@@ -25,7 +25,7 @@ export function HeaderNav() {
     if (authState.status !== "logged_in") {
       return [
         { kind: "link", href: "/vacatures", label: "Vacatures" },
-        { kind: "link", href: "/pricing", label: "Pricing" },
+        { kind: "link", href: "/prijzen", label: "Prijzen" },
       ];
     }
 
@@ -47,7 +47,7 @@ export function HeaderNav() {
       { kind: "link", href: "/onboarding", label: "Bedrijfsstijl" },
       { kind: "link", href: "/instellingen", label: "Instellingen" },
       { kind: "action", id: "logout", label: "Uitloggen" },
-      { kind: "link", href: "/pricing", label: "Pricing" },
+      { kind: "link", href: "/prijzen", label: "Prijzen" },
     ];
   }, [authState]);
 
