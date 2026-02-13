@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const payload = (await req.json().catch(() => null)) as null | { rawIntent?: string };
   const rawIntent = (payload?.rawIntent ?? "").trim();
-  if (rawIntent.length < 20) {
+  if (rawIntent.length < 10) {
     return NextResponse.json({ error: "rawIntent too short" }, { status: 400 });
   }
 

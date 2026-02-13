@@ -15,6 +15,8 @@ export default function CreateJobPage() {
   const [rawIntent, setRawIntent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const minLen = 10;
+  const trimmedLen = rawIntent.trim().length;
 
   return (
     <RequireEmployer>
@@ -37,27 +39,38 @@ export default function CreateJobPage() {
           />
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              Bedrijfsstijl:{" "}
-              {company ? (
-                <span className="font-medium text-zinc-700 dark:text-zinc-200">
-                  {company.name}
-                </span>
-              ) : (
-                <span>
-                  nog niet ingesteld.{" "}
-                  <Link
-                    className="font-medium text-zinc-900 underline underline-offset-2 dark:text-zinc-100"
-                    href="/onboarding"
-                  >
-                    Stel in
-                  </Link>
-                </span>
-              )}
+            <div className="space-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <div>
+                Bedrijfsstijl:{" "}
+                {company ? (
+                  <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                    {company.name}
+                  </span>
+                ) : (
+                  <span>
+                    nog niet ingesteld.{" "}
+                    <Link
+                      className="font-medium text-zinc-900 underline underline-offset-2 dark:text-zinc-100"
+                      href="/onboarding"
+                    >
+                      Stel in
+                    </Link>
+                  </span>
+                )}
+              </div>
+              <div>
+                {trimmedLen < minLen ? (
+                  <span>
+                    Beschrijf iets meer (min. {minLen} tekens) · {trimmedLen}/{minLen}
+                  </span>
+                ) : (
+                  <span>{trimmedLen} tekens</span>
+                )}
+              </div>
             </div>
 
             <button
-              disabled={loading || rawIntent.trim().length < 20}
+              disabled={loading || trimmedLen < minLen}
               onClick={async () => {
                 setLoading(true);
                 setError(null);
