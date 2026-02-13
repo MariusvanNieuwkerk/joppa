@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const supabase = useMemo(() => getSupabaseClient(), []);
 
   const [loading, setLoading] = useState(true);
+  const [hasSession, setHasSession] = useState(false);
   const [email, setEmail] = useState<string>("");
   const [role, setRole] = useState<"employer" | "candidate" | "unknown">("unknown");
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,14 @@ export default function SettingsPage() {
     (async () => {
       setLoading(true);
       setError(null);
+      let sessionPresent = false;
       try {
         if (!supabase) throw new Error("Supabase is niet ingesteld.");
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
         const userEmail = data.session?.user?.email ?? "";
+        sessionPresent = Boolean(token);
+        if (!cancelled) setHasSession(sessionPresent);
         if (!token) throw new Error("Je bent niet ingelogd.");
         setEmail(userEmail);
 
@@ -40,6 +44,7 @@ export default function SettingsPage() {
         setRole(json.role ?? "unknown");
       } catch (e) {
         if (cancelled) return;
+        setHasSession(sessionPresent);
         setError(e instanceof Error ? e.message : "Er ging iets mis.");
       } finally {
         if (!cancelled) setLoading(false);
@@ -99,23 +104,26 @@ export default function SettingsPage() {
         </div>
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={async () => {
-              if (!supabase) return;
-              await supabase.auth.signOut();
-              router.push("/login");
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
-          >
-            Uitloggen
-          </button>
-          <Link
-            href="/login"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
-            Naar inloggen
-          </Link>
+          {hasSession ? (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!supabase) return;
+                await supabase.auth.signOut();
+                router.push("/login");
+              }}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
+            >
+              Uitloggen
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            >
+              Naar inloggen
+            </Link>
+          )}
         </div>
       </div>
 
