@@ -79,10 +79,10 @@ export function PublicJobClient({
   if (!job || !company || company.slug !== companySlug) {
     return (
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <h1 className="text-xl font-semibold">Job page not found</h1>
+        <h1 className="text-xl font-semibold">Vacature niet gevonden</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
           {mode === "demo"
-            ? "In demo-mode komen public pages uit je lokale browser data. Maak eerst een job via /create."
+            ? "In demo-modus komen publieke pagina’s uit je lokale browserdata. Maak eerst een vacature via /create."
             : "Deze vacature is (nog) niet live."}
         </p>
       </div>
@@ -96,7 +96,7 @@ export function PublicJobClient({
           {company.name}
         </div>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          {job.title ?? "Untitled role"}
+          {job.title ?? "Zonder titel"}
         </h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
           {job.location ? job.location : "Locatie in overleg"}
@@ -125,7 +125,7 @@ export function PublicJobClient({
             Meer vacatures van {company.name}
           </Link>
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
-            {mode === "live" ? "Live vacature" : "Demo-mode"}
+            {mode === "live" ? "Live vacature" : "Demo-modus"}
           </div>
         </div>
       </header>
@@ -134,7 +134,7 @@ export function PublicJobClient({
         <div className="prose prose-zinc max-w-none text-sm leading-6 dark:prose-invert">
           <pre className="whitespace-pre-wrap font-sans">
             {(websiteContent?.content?.body as string) ??
-              "No website copy yet. Go back to the cockpit and generate copy."}
+              "Nog geen vacaturetekst. Ga terug naar de cockpit en genereer tekst."}
           </pre>
         </div>
       </section>
@@ -143,7 +143,7 @@ export function PublicJobClient({
         id="apply"
         className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
       >
-        <h2 className="text-lg font-semibold">Apply</h2>
+        <h2 className="text-lg font-semibold">Solliciteren</h2>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
           In v1 koppelen we hier je ATS link / formulier. Voor nu is dit een
           placeholder.

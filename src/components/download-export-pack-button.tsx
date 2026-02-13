@@ -116,7 +116,7 @@ export function DownloadExportPackButton({
               `Indeed: /api/indeed/feed.xml`,
               `Export info: /api/export/${jobId}`,
               "",
-              "Public pagina: (via cockpit → ‘Preview public page’)",
+              "Publieke pagina: (via cockpit → ‘Bekijk publieke pagina’)",
             ].join("\n")
           );
 

@@ -3,7 +3,7 @@ import { slugify } from "@/lib/slug";
 
 function pickTitle(raw: string) {
   const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
-  const first = lines[0] ?? "New role";
+  const first = lines[0] ?? "Nieuwe rol";
   // Heuristic: strip leading labels
   return first.replace(/^(functie|rol|title|job)\s*[:\-]\s*/i, "").slice(0, 80);
 }
@@ -77,7 +77,7 @@ export function mockGenerateCampaign(input: {
     const label = channelLabel(channel);
     const headline =
       channel === "tiktok"
-        ? `Stop scrolling: ${title}`
+        ? `Stop met scrollen: ${title}`
         : `${title} bij ${companyName}`;
 
     const body =
@@ -97,7 +97,7 @@ export function mockGenerateCampaign(input: {
             `- Hands-on mentaliteit`,
             ``,
             `## Solliciteer`,
-            `Klik op Apply en we nemen snel contact op.`,
+            `Klik op ‘Solliciteren’ en we nemen snel contact op.`,
           ].join("\n")
         : channel === "indeed"
           ? [
@@ -110,7 +110,7 @@ export function mockGenerateCampaign(input: {
               `- Punt 1`,
               `- Punt 2`,
               ``,
-              `Solliciteren: via de apply link`,
+              `Solliciteren: via de sollicitatielink`,
             ].join("\n")
           : [
               headline,
@@ -122,7 +122,7 @@ export function mockGenerateCampaign(input: {
               `- Punt 1`,
               `- Punt 2`,
               ``,
-              `Reageer / Apply via link in bio.`,
+              `Reageer / solliciteer via link in bio.`,
               `#vacature #werken #${slugify(title).replace(/-/g, "")}`,
             ].join("\n");
 

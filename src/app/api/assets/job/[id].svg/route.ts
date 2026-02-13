@@ -28,7 +28,7 @@ export async function GET(
         ? [1080, 1920]
         : [1080, 1350]; // 4x5 default
 
-  const title = "Job Campaign";
+  const title = "Vacature";
   const subtitle = `ID: ${id.slice(-10)}`;
 
   const bg =
@@ -66,7 +66,7 @@ export async function GET(
       ${escapeXml(subtitle)}
     </text>
     <rect x="80" y="${h - 210}" width="${w - 160}" height="90" rx="24" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.18)"/>
-    <text x="120" y="${h - 152}" font-size="30" font-weight="600">${escapeXml("Apply now")}</text>
+    <text x="120" y="${h - 152}" font-size="30" font-weight="600">${escapeXml("Solliciteer nu")}</text>
   </g>
 </svg>`;
 

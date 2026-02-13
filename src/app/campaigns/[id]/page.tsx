@@ -79,13 +79,13 @@ type AnyJob = Job | LiveJob;
 type AnyRun = GenerationRun | LiveRun;
 
 const tabItems = [
-  { id: "overview", label: "Overview" },
-  { id: "structure", label: "Structure" },
-  { id: "copy", label: "Copy" },
-  { id: "visuals", label: "Visuals" },
+  { id: "overview", label: "Overzicht" },
+  { id: "structure", label: "Gegevens" },
+  { id: "copy", label: "Teksten" },
+  { id: "visuals", label: "Beelden" },
   { id: "social", label: "Social" },
-  { id: "publish", label: "Publish/Export" },
-  { id: "history", label: "History" },
+  { id: "publish", label: "Plaatsen & export" },
+  { id: "history", label: "Geschiedenis" },
 ] as const;
 
 const channels: Array<{ id: Channel; label: string }> = [
@@ -175,9 +175,9 @@ export default function JobCockpitPage({
   if (!job) {
     return (
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-        <h1 className="text-xl font-semibold">Job not found</h1>
+        <h1 className="text-xl font-semibold">Vacature niet gevonden</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-          Maak een nieuwe job via{" "}
+          Maak een nieuwe vacature via{" "}
           <Link className="underline underline-offset-2" href="/create">
             /create
           </Link>
@@ -219,10 +219,10 @@ export default function JobCockpitPage({
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Job Campaign
+            Vacaturecampagne
           </div>
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            {job.title ?? "Untitled role"}
+            {job.title ?? "Zonder titel"}
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
             Status:{" "}
@@ -238,13 +238,13 @@ export default function JobCockpitPage({
             href={`/jobs/${companySlug}/${jobSlug}`}
             className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
           >
-            Preview public page
+            Bekijk publieke pagina
           </Link>
           <Link
             href="/create"
             className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
-            New job
+            Nieuwe vacature
           </Link>
         </div>
       </div>
@@ -258,12 +258,12 @@ export default function JobCockpitPage({
               <div className="text-sm font-medium">Checklist</div>
               <div className="mt-4 grid gap-3">
                 <ChecklistItem
-                  title="Structure OK"
+                  title="Gegevens compleet"
                   ok={Boolean(job.title && (job.location || job.seniority))}
                   hint="Zorg dat titel/locatie/seniority klopt."
                 />
                 <ChecklistItem
-                  title="Copy reviewed"
+                  title="Teksten gecheckt"
                   ok={
                     mode === "live"
                       ? Boolean(contentsLatest?.website)
@@ -272,14 +272,14 @@ export default function JobCockpitPage({
                   hint="Controleer kanaal-copy en pas aan."
                 />
                 <ChecklistItem
-                  title="Visual selected"
+                  title="Beeld gekozen"
                   ok={true}
                   hint="Templates zijn default in v1."
                 />
                 <ChecklistItem
-                  title="Ready to publish"
+                  title="Klaar om te plaatsen"
                   ok={job.status === "published"}
-                  hint="Public page + export pack."
+                  hint="Publieke pagina + exportpakket."
                 />
               </div>
             </div>
@@ -287,16 +287,19 @@ export default function JobCockpitPage({
 
           <div className="md:col-span-4">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="text-sm font-medium">Next actions</div>
+              <div className="text-sm font-medium">Volgende stappen</div>
               <div className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
                 <p>
-                  - Review in <b>Structure</b> en <b>Copy</b>
+                  - Check <b>Gegevens</b> en <b>Teksten</b>
                 </p>
                 <p>
-                  - Kies visuals in <b>Visuals</b>
+                  - Kies beelden in <b>Beelden</b>
                 </p>
                 <p>
-                  - Publish/export in <b>Publish/Export</b>
+                  - Plaatsen/export in <b>Plaatsen & export</b>
+                </p>
+                <p>
+                  - Beoordeel en keur goed in <b>Social</b>
                 </p>
               </div>
             </div>
@@ -306,10 +309,10 @@ export default function JobCockpitPage({
 
       {tab === "structure" ? (
         <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="text-sm font-medium">Structured fields</div>
+          <div className="text-sm font-medium">Basisgegevens</div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div>
-              <label className="text-sm font-medium">Title</label>
+              <label className="text-sm font-medium">Titel</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -317,7 +320,7 @@ export default function JobCockpitPage({
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Location</label>
+              <label className="text-sm font-medium">Locatie</label>
               <input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
@@ -325,7 +328,7 @@ export default function JobCockpitPage({
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Seniority</label>
+              <label className="text-sm font-medium">Niveau</label>
               <input
                 value={seniority}
                 onChange={(e) => setSeniority(e.target.value)}
@@ -367,7 +370,7 @@ export default function JobCockpitPage({
                 }}
                 className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
               >
-                Save structure
+                Opslaan
               </button>
             </div>
           </div>
@@ -378,7 +381,7 @@ export default function JobCockpitPage({
         <div className="grid gap-6 md:grid-cols-12">
           <div className="md:col-span-4">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="text-sm font-medium">Channels</div>
+              <div className="text-sm font-medium">Kanalen</div>
               <div className="mt-3 grid gap-2">
                 {channels.map((c) => (
                   <button
@@ -412,10 +415,10 @@ export default function JobCockpitPage({
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <div className="text-sm font-medium">
-                    {channels.find((c) => c.id === activeChannel)?.label} copy
+                    {channels.find((c) => c.id === activeChannel)?.label} tekst
                   </div>
                   <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    Edit direct. Later: section-level regen + version history.
+                    Pas direct aan. Later: per sectie regenereren + versiegeschiedenis.
                   </div>
                 </div>
                 <button
@@ -460,7 +463,7 @@ export default function JobCockpitPage({
                   }}
                   className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                 >
-                  Save as new version
+                  Opslaan als nieuwe versie
                 </button>
               </div>
 
@@ -485,15 +488,15 @@ export default function JobCockpitPage({
                 compositing + optionele AI backgrounds (preview→approve).
               </p>
               <div className="mt-4 grid gap-3">
-                <TemplatePreview jobId={job.id} template="bold" label="Bold" />
+                <TemplatePreview jobId={job.id} template="bold" label="Krachtig" />
                 <TemplatePreview jobId={job.id} template="minimal" label="Minimal" />
-                <TemplatePreview jobId={job.id} template="friendly" label="Friendly" />
+                <TemplatePreview jobId={job.id} template="friendly" label="Vriendelijk" />
               </div>
             </div>
           </div>
           <div className="md:col-span-7">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="text-sm font-medium">Preview</div>
+              <div className="text-sm font-medium">Voorbeeld</div>
               <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
                 <img
                   alt="Job visual preview"
@@ -638,7 +641,7 @@ export default function JobCockpitPage({
         <div className="grid gap-6 md:grid-cols-12">
           <div className="md:col-span-7">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="text-sm font-medium">Public job page</div>
+              <div className="text-sm font-medium">Publieke vacaturepagina</div>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                 URL:{" "}
                 <Link
@@ -678,7 +681,7 @@ export default function JobCockpitPage({
                   }}
                   className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                 >
-                  Publish
+                  Live zetten
                 </button>
                 <button
                   onClick={async () => {
@@ -706,7 +709,7 @@ export default function JobCockpitPage({
                   }}
                   className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
                 >
-                  Unpublish
+                  Offline halen
                 </button>
               </div>
             </div>
@@ -750,7 +753,7 @@ export default function JobCockpitPage({
         <div className="grid gap-6 md:grid-cols-12">
           <div className="md:col-span-5">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="text-sm font-medium">Generation runs</div>
+              <div className="text-sm font-medium">Generaties</div>
               <div className="mt-4 space-y-2 text-sm">
                 {(mode === "live" ? runs : listRuns(job.id)).length ? (
                   (mode === "live" ? (runs as AnyRun[]) : (listRuns(job.id) as AnyRun[])).map(
@@ -775,7 +778,7 @@ export default function JobCockpitPage({
                   )
                 ) : (
                   <div className="text-zinc-500 dark:text-zinc-400">
-                    No runs yet.
+                    Nog geen generaties.
                   </div>
                 )}
               </div>
@@ -783,7 +786,7 @@ export default function JobCockpitPage({
           </div>
           <div className="md:col-span-7">
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="text-sm font-medium">Notes</div>
+              <div className="text-sm font-medium">Notities</div>
               <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
                 In de echte implementatie bewaren we per stap: prompt, model, status, errors en cost.
                 Dan kun je “regenereer alleen Indeed copy” of “regenereer visuals” doen zonder de rest opnieuw te draaien.
@@ -857,7 +860,7 @@ function TemplatePreview({
         target="_blank"
         rel="noreferrer"
       >
-        Open
+        Openen
       </a>
     </div>
   );
@@ -895,7 +898,7 @@ function SocialCard({
   async function copyCaption() {
     try {
       await navigator.clipboard.writeText(caption || "");
-      setNote("Caption gekopieerd.");
+      setNote("Tekst gekopieerd.");
       setTimeout(() => setNote(null), 1500);
     } catch {
       setNote("Kopiëren lukt niet in deze browser.");
@@ -968,7 +971,7 @@ function SocialCard({
       </div>
 
       <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-        <div className="font-semibold">Caption</div>
+        <div className="font-semibold">Tekst</div>
         <div className="mt-1 whitespace-pre-wrap leading-5">
           {caption ? caption.slice(0, 320) + (caption.length > 320 ? "…" : "") : "—"}
         </div>
@@ -999,7 +1002,7 @@ function SocialCard({
           onClick={copyCaption}
           className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
         >
-          Kopieer caption
+          Kopieer tekst
         </button>
         <button
           type="button"

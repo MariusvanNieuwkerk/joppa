@@ -3,9 +3,9 @@ import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
-  title: "Joppa — AI Job Campaign Cockpit",
+  title: "Joppa — mooie vacatures, zonder gedoe",
   description:
-    "Van brain dump naar multi-channel vacaturecampagne: copy, visuals en export packs.",
+    "Maak stap‑voor‑stap een strakke vacature. Joppa maakt teksten per kanaal + visuals, jij keurt goed en deelt.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="nl">
       <body className="antialiased">
         <AppShell>{children}</AppShell>
       </body>

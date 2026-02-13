@@ -679,7 +679,7 @@ export default function CreateClient() {
                     </div>
 
                     <div>
-                      <div className="text-sm font-medium">Visuals</div>
+                      <div className="text-sm font-medium">Beelden</div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {(
                           [
@@ -927,7 +927,7 @@ export default function CreateClient() {
             </div>
             <div className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/60 p-4 text-xs text-amber-900/80 dark:border-zinc-800 dark:bg-black dark:text-zinc-300">
               Tip: Joppa werkt het beste als je eerst de basis invult. Daarna kan AI de
-              tekst, kanalen en visuals consistent maken.
+              tekst, kanalen en beelden consistent maken.
             </div>
           </div>
 
@@ -936,7 +936,7 @@ export default function CreateClient() {
             <ul className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
               <li>Een nette vacaturetekst (voor je website)</li>
               <li>Korte teksten voor Indeed + socials</li>
-              <li>Visuals op basis van templates (goedkoop)</li>
+              <li>Beelden op basis van templates (goedkoop)</li>
               <li>Een export die je zo kunt plaatsen</li>
             </ul>
           </div>

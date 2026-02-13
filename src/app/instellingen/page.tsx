@@ -167,7 +167,7 @@ export default function SettingsPage() {
               cta="Naar vacatures"
             />
             <SettingCard
-              title="Job alerts (later)"
+              title="Vacature-alerts (later)"
               body="Straks kun je alerts aanzetten voor nieuwe vacatures op jouw criteria."
               href="/kandidaat"
               cta="Bekijk kandidaat omgeving"

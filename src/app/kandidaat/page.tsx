@@ -6,9 +6,9 @@ export default function CandidateHomePage() {
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Werkzoekenden</h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-          Dit is de kandidaat‑omgeving. In phase 1 is dit nog klein: je kunt al
+          Dit is de kandidaat‑omgeving. In fase 1 is dit nog klein: je kunt al
           vacatures bekijken. Solliciteren, profielen en matching bouwen we in
-          phase 2.
+          fase 2.
         </p>
       </div>
 

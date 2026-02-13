@@ -102,7 +102,7 @@ export default function PrijzenPage() {
         />
 
         <PriceCard
-          title="Business"
+          title="Enterprise"
           price="Vanaf €499/m"
           subtitle="Jaarlijks (of €599/m maandelijks)."
           bullets={[
@@ -118,7 +118,7 @@ export default function PrijzenPage() {
 
       <div className="rounded-2xl border border-amber-200/80 bg-white p-6 text-sm text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
         <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-          Add‑ons
+          Extra’s
         </div>
         <div className="mt-2 grid gap-2 md:grid-cols-3">
           <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-4 dark:border-zinc-800 dark:bg-black">
