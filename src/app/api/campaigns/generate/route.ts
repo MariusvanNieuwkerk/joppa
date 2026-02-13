@@ -30,11 +30,15 @@ export async function POST(req: NextRequest) {
   const guard = await requireEmployer(req);
   if (!guard.ok) return NextResponse.json({ error: guard.message }, { status: guard.status });
 
-  const payload = (await req.json().catch(() => null)) as null | { rawIntent?: string };
+  const payload = (await req.json().catch(() => null)) as null | {
+    rawIntent?: string;
+    structured?: unknown;
+  };
   const rawIntent = (payload?.rawIntent ?? "").trim();
   if (rawIntent.length < 10) {
     return NextResponse.json({ error: "rawIntent too short" }, { status: 400 });
   }
+  const structured = payload?.structured ?? null;
 
   const db = getDbOrThrow();
   const company = await getOrCreateDefaultCompany();
@@ -89,7 +93,10 @@ export async function POST(req: NextRequest) {
         seniority: generated.job.seniority ?? null,
         employment_type: generated.job.employmentType ?? null,
         job_slug: jobSlug,
-        extracted_data: generated.job.summary ? { summary: generated.job.summary } : {},
+        extracted_data: {
+          ...(generated.job.summary ? { summary: generated.job.summary } : {}),
+          ...(structured ? { input_v1: structured } : {}),
+        },
         updated_at: new Date().toISOString(),
       })
       .eq("id", job.id);
