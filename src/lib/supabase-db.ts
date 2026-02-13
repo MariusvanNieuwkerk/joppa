@@ -1,6 +1,22 @@
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabase-admin";
 import { slugify } from "@/lib/slug";
 
+type DefaultCompany = {
+  id: string;
+  name: string;
+  slug: string;
+  website: string | null;
+  brand_primary_color: string | null;
+  brand_tone: string | null;
+  brand_pitch: string | null;
+  created_at: string;
+};
+
+type DefaultCompanyCache = { value: DefaultCompany | null; exp: number };
+
+let defaultCompanyCache: DefaultCompanyCache | null = null;
+const DEFAULT_COMPANY_TTL_MS = 60_000;
+
 export function getDbOrThrow() {
   if (!isSupabaseAdminConfigured()) {
     throw new Error("Supabase is not configured (missing URL or service role key)");
@@ -11,6 +27,11 @@ export function getDbOrThrow() {
 }
 
 export async function getOrCreateDefaultCompany() {
+  const now = Date.now();
+  if (defaultCompanyCache && defaultCompanyCache.exp > now && defaultCompanyCache.value) {
+    return defaultCompanyCache.value;
+  }
+
   const db = getDbOrThrow();
 
   const { data: existing } = await db
@@ -19,7 +40,11 @@ export async function getOrCreateDefaultCompany() {
     .order("created_at", { ascending: true })
     .limit(1);
 
-  if (existing?.[0]) return existing[0];
+  if (existing?.[0]) {
+    const company = existing[0] as DefaultCompany;
+    defaultCompanyCache = { value: company, exp: now + DEFAULT_COMPANY_TTL_MS };
+    return company;
+  }
 
   const name = "My Company";
   const baseSlug = slugify(name) || "bedrijf";
@@ -35,7 +60,9 @@ export async function getOrCreateDefaultCompany() {
     .single();
 
   if (error) throw error;
-  return data;
+  const created = data as DefaultCompany;
+  defaultCompanyCache = { value: created, exp: now + DEFAULT_COMPANY_TTL_MS };
+  return created;
 
   async function uniqueCompanySlug(s: string) {
     let candidate = s;
