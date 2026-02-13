@@ -45,31 +45,31 @@ export default function Home() {
                 <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
                   1
                 </span>
-                <span>Schrijf in je eigen woorden wie je zoekt</span>
+                <span>Stel één keer je bedrijfsstijl in (tone, kleuren, branding)</span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
                   2
                 </span>
-                <span>Joppa maakt een nette vacaturetekst (en meerdere versies)</span>
+                <span>Maak je vacature in de wizard (stap‑voor‑stap, in gewone taal)</span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
                   3
                 </span>
-                <span>Kies een stijl (of upload een foto) voor je visuals</span>
+                <span>Joppa maakt teksten per kanaal + visuals. Jij checkt en past aan</span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-xs text-white dark:bg-white dark:text-black">
                   4
                 </span>
-                <span>Pak je export (tekst + visuals) en plaats op je kanalen</span>
+                <span>Keur social posts goed en deel of download. Indeed loopt automatisch</span>
               </li>
             </ol>
 
             <div className="mt-5 rounded-xl border border-amber-200/80 bg-amber-50/60 p-4 text-xs text-amber-900/80 dark:border-zinc-800 dark:bg-black dark:text-zinc-300">
-              Je begint met mooie standaard templates (gratis). Wil je een andere
-              sfeer? Dan kun je met één klik een andere stijl kiezen.
+              Je start met mooie standaard templates (gratis). Wil je een andere sfeer?
+              Kies een stijl of upload een eigen foto. (Later kun je ook optioneel AI‑beelden gebruiken.)
             </div>
           </div>
         </div>
@@ -103,7 +103,8 @@ export default function Home() {
             </div>
             <p className="mt-1 leading-6">
               Je krijgt kant‑en‑klare teksten en beelden voor LinkedIn,
-              Instagram, Facebook en TikTok. Kopiëren, downloaden, klaar.
+              Instagram, Facebook en TikTok. Je beoordeelt ze in het juiste formaat,
+              keurt goed en deelt (of downloadt) meteen.
             </p>
           </div>
         </div>
