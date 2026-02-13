@@ -83,6 +83,7 @@ const tabItems = [
   { id: "structure", label: "Structure" },
   { id: "copy", label: "Copy" },
   { id: "visuals", label: "Visuals" },
+  { id: "social", label: "Social" },
   { id: "publish", label: "Publish/Export" },
   { id: "history", label: "History" },
 ] as const;
@@ -191,6 +192,26 @@ export default function JobCockpitPage({
     mode === "live"
       ? (job as LiveJob).job_slug
       : (job as Job).jobSlug ?? "vacature";
+  const jobId = job.id;
+
+  const publicUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/jobs/${companySlug}/${jobSlug}`
+      : `/jobs/${companySlug}/${jobSlug}`;
+
+  function getCaption(channel: Channel) {
+    const live = contentsLatest?.[channel]?.content?.body ?? null;
+    if (typeof live === "string" && live.trim()) return live.trim();
+    const fallback = contentsLatest?.website?.content?.body ?? null;
+    if (typeof fallback === "string" && fallback.trim()) return fallback.trim();
+    const demo = getLatestContent(jobId, channel)?.content?.body;
+    if (typeof demo === "string" && demo.trim()) return demo.trim();
+    return "";
+  }
+
+  function isApproved(channel: Channel) {
+    return (contentsLatest?.[channel]?.state ?? "") === "approved";
+  }
 
   return (
     <RequireEmployer>
@@ -488,6 +509,131 @@ export default function JobCockpitPage({
         </div>
       ) : null}
 
+      {tab === "social" ? (
+        <div className="grid gap-6 md:grid-cols-12">
+          <div className="md:col-span-7">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+              <div className="text-sm font-medium">Beoordeel social posts</div>
+              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                Bekijk de post zoals hij er ongeveer uitziet per kanaal. Keur goed en deel (waar mogelijk)
+                direct. Download blijft altijd beschikbaar als fallback.
+              </p>
+
+              <div className="mt-5 grid gap-4">
+                <SocialCard
+                  title="Instagram feed (1:1)"
+                  channel="instagram"
+                  ratio="1x1"
+                  template="friendly"
+                  caption={getCaption("instagram")}
+                  approved={isApproved("instagram")}
+                  publicUrl={publicUrl}
+                  jobId={job.id}
+                  mode={mode}
+                  onToggleApprove={async (next) => {
+                    if (mode !== "live") return;
+                    const res = await fetch(
+                      `/api/campaigns/${job.id}/content`,
+                      await withAuth({
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          channel: "instagram",
+                          state: next ? "approved" : "draft",
+                        }),
+                      })
+                    );
+                    const json = (await res.json().catch(() => ({}))) as { content?: LiveContentRow };
+                    if (res.ok && json.content) {
+                      setContentsLatest((prev) => ({ ...(prev ?? {}), instagram: json.content }));
+                    }
+                  }}
+                />
+
+                <SocialCard
+                  title="Facebook post (4:5)"
+                  channel="facebook"
+                  ratio="4x5"
+                  template="bold"
+                  caption={getCaption("facebook")}
+                  approved={isApproved("facebook")}
+                  publicUrl={publicUrl}
+                  jobId={job.id}
+                  mode={mode}
+                  sharePreset="facebook"
+                  onToggleApprove={async (next) => {
+                    if (mode !== "live") return;
+                    const res = await fetch(
+                      `/api/campaigns/${job.id}/content`,
+                      await withAuth({
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          channel: "facebook",
+                          state: next ? "approved" : "draft",
+                        }),
+                      })
+                    );
+                    const json = (await res.json().catch(() => ({}))) as { content?: LiveContentRow };
+                    if (res.ok && json.content) {
+                      setContentsLatest((prev) => ({ ...(prev ?? {}), facebook: json.content }));
+                    }
+                  }}
+                />
+
+                <SocialCard
+                  title="TikTok / Reels (9:16)"
+                  channel="tiktok"
+                  ratio="9x16"
+                  template="minimal"
+                  caption={getCaption("tiktok")}
+                  approved={isApproved("tiktok")}
+                  publicUrl={publicUrl}
+                  jobId={job.id}
+                  mode={mode}
+                  onToggleApprove={async (next) => {
+                    if (mode !== "live") return;
+                    const res = await fetch(
+                      `/api/campaigns/${job.id}/content`,
+                      await withAuth({
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          channel: "tiktok",
+                          state: next ? "approved" : "draft",
+                        }),
+                      })
+                    );
+                    const json = (await res.json().catch(() => ({}))) as { content?: LiveContentRow };
+                    if (res.ok && json.content) {
+                      setContentsLatest((prev) => ({ ...(prev ?? {}), tiktok: json.content }));
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-5">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+              <div className="text-sm font-medium">Direct delen: wat kan nu al?</div>
+              <div className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+                <p>
+                  - <b>Facebook/LinkedIn</b>: we kunnen een share-dialog openen met de public URL.
+                </p>
+                <p>
+                  - <b>Instagram/TikTok</b>: “direct posten” via API vraagt koppelingen en approvals. We
+                  gebruiken daarom de share-sheet (waar beschikbaar) + copy caption.
+                </p>
+              </div>
+              <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-black dark:text-zinc-300">
+                Tip: keur eerst goed per kanaal, dan is het echt “1 klik”.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {tab === "publish" ? (
         <div className="grid gap-6 md:grid-cols-12">
           <div className="md:col-span-7">
@@ -713,6 +859,163 @@ function TemplatePreview({
       >
         Open
       </a>
+    </div>
+  );
+}
+
+function SocialCard({
+  title,
+  channel,
+  ratio,
+  template,
+  caption,
+  approved,
+  publicUrl,
+  jobId,
+  mode,
+  sharePreset,
+  onToggleApprove,
+}: {
+  title: string;
+  channel: Channel;
+  ratio: "1x1" | "4x5" | "9x16";
+  template: "bold" | "minimal" | "friendly";
+  caption: string;
+  approved: boolean;
+  publicUrl: string;
+  jobId: string;
+  mode: "live" | "demo";
+  sharePreset?: "facebook" | "linkedin";
+  onToggleApprove: (next: boolean) => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const assetUrl = `/api/assets/job/${jobId}.svg?ratio=${ratio}&template=${template}`;
+
+  async function copyCaption() {
+    try {
+      await navigator.clipboard.writeText(caption || "");
+      setNote("Caption gekopieerd.");
+      setTimeout(() => setNote(null), 1500);
+    } catch {
+      setNote("Kopiëren lukt niet in deze browser.");
+      setTimeout(() => setNote(null), 2000);
+    }
+  }
+
+  async function shareNow() {
+    const shareText = caption ? `${caption}\n\n${publicUrl}` : publicUrl;
+    if (sharePreset === "facebook") {
+      window.open(
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicUrl)}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      return;
+    }
+    if (sharePreset === "linkedin") {
+      window.open(
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicUrl)}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      return;
+    }
+    // Best effort: Web Share API (mobile share sheet)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nav = navigator as any;
+    if (nav?.share) {
+      try {
+        await nav.share({
+          title,
+          text: shareText,
+          url: publicUrl,
+        });
+        return;
+      } catch {
+        // fall through
+      }
+    }
+    await copyCaption();
+    window.open(publicUrl, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-black">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title}</div>
+          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            Status:{" "}
+            <span className={approved ? "text-emerald-600 dark:text-emerald-300" : ""}>
+              {approved ? "Goedgekeurd" : "Nog niet goedgekeurd"}
+            </span>
+            {mode === "demo" ? " · demo" : ""}
+          </div>
+        </div>
+        <a
+          href={assetUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs font-medium text-zinc-900 underline underline-offset-2 dark:text-zinc-100"
+        >
+          Open
+        </a>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <img alt={`${channel} preview`} src={assetUrl} className="w-full" />
+      </div>
+
+      <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+        <div className="font-semibold">Caption</div>
+        <div className="mt-1 whitespace-pre-wrap leading-5">
+          {caption ? caption.slice(0, 320) + (caption.length > 320 ? "…" : "") : "—"}
+        </div>
+      </div>
+
+      {note ? (
+        <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{note}</div>
+      ) : null}
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          disabled={busy || mode !== "live"}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await onToggleApprove(!approved);
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        >
+          {approved ? "Goedkeuring intrekken" : "Goedkeuren"}
+        </button>
+        <button
+          type="button"
+          onClick={copyCaption}
+          className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-black dark:text-zinc-100 dark:hover:bg-zinc-900"
+        >
+          Kopieer caption
+        </button>
+        <button
+          type="button"
+          onClick={shareNow}
+          className="inline-flex h-10 flex-1 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900"
+        >
+          Deel nu
+        </button>
+      </div>
+
+      <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+        Download:{" "}
+        <a className="underline underline-offset-2" href={assetUrl} download>
+          {channel}-{ratio}.svg
+        </a>
+      </div>
     </div>
   );
 }
