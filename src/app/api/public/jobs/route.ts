@@ -68,7 +68,13 @@ export async function GET() {
 
   return NextResponse.json(
     { jobs },
-    { headers: { "Cache-Control": "no-store" } }
+    {
+      headers: {
+        // Safe to cache briefly: public, published jobs list.
+        // Vercel will cache at the edge when using s-maxage.
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    }
   );
 }
 

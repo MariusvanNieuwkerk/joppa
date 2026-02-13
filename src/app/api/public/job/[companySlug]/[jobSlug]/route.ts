@@ -39,7 +39,12 @@ export async function GET(
 
   return NextResponse.json(
     { job, websiteContent: website?.[0] ?? null },
-    { headers: { "Cache-Control": "no-store" } }
+    {
+      headers: {
+        // Public job page content. Cache briefly for speed; SWR keeps it fresh.
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    }
   );
 }
 

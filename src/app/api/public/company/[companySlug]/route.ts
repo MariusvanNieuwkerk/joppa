@@ -34,7 +34,12 @@ export async function GET(
 
   return NextResponse.json(
     { company, jobs: jobs ?? [] },
-    { headers: { "Cache-Control": "no-store" } }
+    {
+      headers: {
+        // Public company page data: safe to cache briefly.
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    }
   );
 }
 
